@@ -29,8 +29,7 @@ def compare_and_merge(folder1, folder2, output_folder):
 
             # Step 3: Save the merged DataFrame to a new Excel file in the output folder
             output_file_path = os.path.join(output_folder, f'merged_{file1}')
-            with pd.ExcelWriter(output_file_path, engine='xlsxwriter') as writer:
-                df_diff.to_excel(writer, sheet_name='Differences', index=False)
+            df_diff.to_excel(output_file_path, sheet_name='Differences', index=False)
 
             print(f"File saved to: {output_file_path}")
 
