@@ -28,10 +28,14 @@ for r in dataframe_to_rows(df3, index=False, header=True):
 highlight = openpyxl.styles.PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
 
 # Loop through the differences and apply the highlight style to the corresponding cells in the workbook
-for row in diff.index:
-    for col in diff.columns:
+for (row, col), value in diff.items():
+    try:
+        row = int(row)
+        col = int(col)
         cell = ws.cell(row=row + 2, column=col + 1)
         cell.fill = highlight
+    except ValueError:
+        print(f"Skipping invalid indices: row={row}, col={col}")
 
 # Save the workbook as a new file
 wb.save("file3.xlsx")
