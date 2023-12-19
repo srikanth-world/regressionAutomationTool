@@ -1,43 +1,40 @@
-import pandas as pd
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
 
 def compare_and_merge(file1_path, file2_path, columns_to_compare, output_file_path):
-    # Read Excel files into Pandas dataframes
-    df1 = pd.read_excel(file1_path, sheet_name=None)
-    df2 = pd.read_excel(file2_path, sheet_name=None)
+    # Load Excel files using openpyxl
+    workbook1 = load_workbook(file1_path)
+    workbook2 = load_workbook(file2_path)
 
-    # Create a Pandas Excel writer using XlsxWriter as the engine
-    with pd.ExcelWriter(output_file_path, engine='openpyxl') as writer:
-        # Write an empty dataframe to create the Excel file
-        pd.DataFrame().to_excel(writer, sheet_name='dummy', index=False)
+    # Create a new workbook for the output
+    output_workbook = load_workbook(output_file_path)
 
-        # Get the xlsxwriter workbook and worksheet objects
-        workbook = writer.book
-        worksheet = workbook['dummy']
-        workbook.remove(worksheet)  # Remove the dummy sheet
+    # Iterate through sheets in both files
+    for sheet_name in set(workbook1.sheetnames) | set(workbook2.sheetnames):
+        # Get worksheets for the current sheet (or create a new one if sheet not present)
+        worksheet1 = workbook1[sheet_name] if sheet_name in workbook1.sheetnames else workbook1.create_sheet(title=sheet_name)
+        worksheet2 = workbook2[sheet_name] if sheet_name in workbook2.sheetnames else workbook2.create_sheet(title=sheet_name)
+        output_worksheet = output_workbook[sheet_name] if sheet_name in output_workbook.sheetnames else output_workbook.create_sheet(title=sheet_name)
 
-        # Iterate through all sheets in both files
-        for sheet_name in set(df1.keys()) | set(df2.keys()):
-            # Get the dataframes for the current sheet (or empty dataframe if sheet not present)
-            sheet_df1 = df1.get(sheet_name, pd.DataFrame())
-            sheet_df2 = df2.get(sheet_name, pd.DataFrame())
+        # Create a new worksheet for the output
+        output_worksheet = output_workbook.create_sheet(title=sheet_name)
 
-            # Merge dataframes on specified columns
-            merged_df = pd.merge(sheet_df1, sheet_df2, how='outer', on=columns_to_compare, indicator=True)
+        # Copy the headers to the output worksheet
+        for col_num, value in enumerate(worksheet1.iter_cols(values_only=True, max_row=1), start=1):
+            output_worksheet.cell(row=1, column=col_num, value=value[0])
 
-            # Write the merged dataframe to the Excel file
-            merged_df.to_excel(writer, sheet_name=sheet_name, index=False, startrow=1, header=False)
+        # Merge data from both worksheets on specified columns
+        for row_num, (row1, row2) in enumerate(zip(worksheet1.iter_rows(min_row=2, values_only=True),
+                                                  worksheet2.iter_rows(min_row=2, values_only=True)), start=2):
+            output_worksheet.append(row1 + row2)
 
-            # Get the xlsxwriter worksheet object for the current sheet
-            xlsxwriter_worksheet = workbook[sheet_name]
+            # Highlight differences in the specified columns
+            for col_num, (cell1, cell2) in enumerate(zip(row1, row2), start=1):
+                if col_num in columns_to_compare and cell1 != cell2:
+                    output_worksheet.cell(row=row_num, column=col_num).fill = PatternFill(start_color="yellow", end_color="yellow", fill_type="solid")
 
-            # Define cell formats and highlight differences
-            fill = PatternFill(start_color="yellow", end_color="yellow", fill_type="solid")
-            for row in range(2, len(merged_df) + 2):
-                if xlsxwriter_worksheet.cell(row=row, column=len(merged_df.columns) + 1).value == 'both':
-                    for col in range(1, len(merged_df.columns) + 1):
-                        xlsxwriter_worksheet.cell(row=row, column=col).fill = fill
+    # Save the output workbook
+    output_workbook.save(output_file_path)
 
 # Example usage
-compare_and_merge('file1.xlsx', 'file2.xlsx', ['Column1', 'Column2'], 'file3.xlsx')
+compare_and_merge('file1.xlsx', 'file2.xlsx', [1, 2], 'file3.xlsx')
