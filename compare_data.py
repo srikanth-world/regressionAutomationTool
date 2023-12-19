@@ -7,6 +7,10 @@ def compare_and_merge_excel(file1_path, file2_path, columns_to_compare, file3_pa
 
     # Initialize an Excel writer for the output file
     with pd.ExcelWriter(file3_path, engine='openpyxl') as writer:
+        # Add a dummy sheet to avoid the "at least one sheet must be visible" error
+        writer.book.create_sheet('dummy_sheet')
+        writer.book.remove(writer.book['dummy_sheet'])
+
         # Iterate over each sheet in both Excel files
         for sheet_name in excel1.sheet_names:
             # Read data from the current sheet in both files
