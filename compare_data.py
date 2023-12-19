@@ -1,4 +1,5 @@
 import pandas as pd
+import openpyxl
 
 def compare_and_merge_excel(file1_path, file2_path, columns_to_compare, file3_path):
     # Read data from Excel files
@@ -7,11 +8,6 @@ def compare_and_merge_excel(file1_path, file2_path, columns_to_compare, file3_pa
 
     # Initialize an Excel writer for the output file
     with pd.ExcelWriter(file3_path, engine='openpyxl') as writer:
-        # Manually set visibility for a dummy sheet
-        writer.book.create_sheet('dummy_sheet')
-        writer.book['dummy_sheet'].sheet_state = 'hidden'
-        writer.book.remove(writer.book['dummy_sheet'])
-
         # Iterate over each sheet in both Excel files
         for sheet_name in excel1.sheet_names:
             # Read data from the current sheet in both files
@@ -35,8 +31,8 @@ def compare_and_merge_excel(file1_path, file2_path, columns_to_compare, file3_pa
             merged_data = pd.merge(df1, df2, on=columns_to_compare, how='outer', suffixes=('_file1', '_file2'))
 
             # Write the differences and merged data to the output file with individual sheets
-            differences_styled.to_excel(writer, sheet_name=f'Differences_{sheet_name}', index=False, header=False, engine='openpyxl', startrow=1)
-            merged_data.to_excel(writer, sheet_name=f'MergedData_{sheet_name}', index=False)
+            differences_styled.to_excel(writer, sheet_name=f'Differences_{sheet_name}', index=False, engine='openpyxl')
+            merged_data.to_excel(writer, sheet_name=f'MergedData_{sheet_name}', index=False, engine='openpyxl')
 
 # Example usage
 file1_path = 'path/to/file1.xlsx'
