@@ -6,6 +6,10 @@ import openpyxl
 df1 = pd.read_excel("file1.xlsx")
 df2 = pd.read_excel("file2.xlsx")
 
+# Set the index of the dataframes using the 'Q' column
+df1 = df1.set_index('Q')
+df2 = df2.set_index('Q')
+
 # Find the differences between the two dataframes
 diff = df1.compare(df2, keep_equal=True)
 
