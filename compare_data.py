@@ -1,43 +1,57 @@
 import pandas as pd
-import openpyxl
+from openpyxl.styles import PatternFill
+from openpyxl import load_workbook
 
-def compare_and_merge_excel(file1_path, file2_path, columns_to_compare, file3_path):
-    # Read data from Excel files
-    excel1 = pd.ExcelFile(file1_path)
-    excel2 = pd.ExcelFile(file2_path)
+def compare_and_highlight_changes(old_df, new_df, sheet_name, output_path):
+    # Merge dataframes on a common key (assuming there is a unique identifier)
+    merged_df = pd.merge(old_df, new_df, on='common_key', how='outer', suffixes=('_old', '_new'))
 
-    # Initialize an Excel writer for the output file
-    with pd.ExcelWriter(file3_path, engine='openpyxl') as writer:
-        # Iterate over each sheet in both Excel files
-        for sheet_name in excel1.sheet_names:
-            # Read data from the current sheet in both files
-            df1 = excel1.parse(sheet_name)
-            df2 = excel2.parse(sheet_name)
+    # Create a Pandas Excel writer using XlsxWriter as the engine.
+    writer = pd.ExcelWriter(output_path, engine='xlsxwriter')
 
-            # Compare dataframes based on specified columns
-            merged_data = pd.merge(df1, df2, on=columns_to_compare, how='outer', suffixes=('_file1', '_file2'), indicator=True)
+    # Write the merged data to a new Excel sheet.
+    merged_df.to_excel(writer, sheet_name=sheet_name, index=False)
 
-            # Identify added, updated, and deleted rows
-            added_rows = merged_data.loc[lambda x: x['_merge'] == 'right_only']
-            updated_rows = merged_data.loc[lambda x: x['_merge'] == 'both']
-            deleted_rows = merged_data.loc[lambda x: x['_merge'] == 'left_only']
+    # Get the xlsxwriter workbook and worksheet objects.
+    workbook  = writer.book
+    worksheet = writer.sheets[sheet_name]
 
-            # Highlight differences in the data
-            differences_styled = pd.DataFrame(index=merged_data.index)
-            differences_styled.loc[added_rows.index, :] = 'background: lightgreen'
-            differences_styled.loc[updated_rows.index, :] = 'background: lightyellow'
+    # Get the dimensions of the DataFrame.
+    num_rows, num_cols = merged_df.shape
 
-            # Merge data from both files into a new dataframe
-            merged_data = pd.merge(df1, df2, on=columns_to_compare, how='outer', suffixes=('_file1', '_file2'))
+    # Create a Pandas Excel writer using XlsxWriter as the engine.
+    writer = pd.ExcelWriter(output_path, engine='xlsxwriter')
 
-            # Write the differences and merged data to the output file with individual sheets
-            differences_styled.to_excel(writer, sheet_name=f'Differences_{sheet_name}', index=False, engine='openpyxl')
-            merged_data.to_excel(writer, sheet_name=f'MergedData_{sheet_name}', index=False, engine='openpyxl')
+    # Iterate through all the columns.
+    for col_num, value in enumerate(merged_df.columns.values):
+        # Define the default cell format with no fill.
+        cell_format = workbook.add_format({'bg_color': '#FFFFFF'})
+
+        # Check if the column header is in the old or new dataframe.
+        if '_old' in value:
+            cell_format.set_bg_color('#FFC7CE')  # Light red fill for old values.
+        elif '_new' in value:
+            cell_format.set_bg_color('#C6EFCE')  # Light green fill for new values.
+
+        # Set the column header cell format.
+        worksheet.write(0, col_num, value, cell_format)
+
+        # Set the column width and format.
+        worksheet.set_column(col_num, col_num, len(value) + 2)
+
+    # Close the Pandas Excel writer and output the Excel file.
+    writer.save()
 
 # Example usage
-file1_path = 'path/to/file1.xlsx'
-file2_path = 'path/to/file2.xlsx'
-columns_to_compare = ['Col1', 'Col2']  # Replace with the actual column names
-file3_path = 'path/to/file3.xlsx'
+old_excel_path = 'path/to/old_excel.xlsx'
+new_excel_path = 'path/to/new_excel.xlsx'
+output_excel_path = 'path/to/output_excel.xlsx'
 
-compare_and_merge_excel(file1_path, file2_path, columns_to_compare, file3_path)
+old_sheets = pd.read_excel(old_excel_path, sheet_name=None)
+new_sheets = pd.read_excel(new_excel_path, sheet_name=None)
+
+for sheet_name in old_sheets.keys():
+    old_df = old_sheets[sheet_name]
+    new_df = new_sheets[sheet_name]
+
+    compare_and_highlight_changes(old_df, new_df, sheet_name, output_excel_path)
