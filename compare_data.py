@@ -6,9 +6,15 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 df1 = pd.read_excel("file1.xlsx")
 df2 = pd.read_excel("file2.xlsx")
 
-# Align DataFrames based on columns and indexes
-df1, df2 = df1.align(df2, axis=1, join='outer')
-df1, df2 = df1.align(df2, axis=0, join='outer')
+# Get the original order of columns
+original_columns_order = list(df1.columns)
+
+# Align DataFrames based on original order of columns
+df1, df2 = df1.align(df2, axis=1, join='outer', fill_value=None)
+
+# Reorder columns to match the original order
+df1 = df1[original_columns_order]
+df2 = df2[original_columns_order]
 
 # Find the differences between the two dataframes
 diff = df1.compare(df2, keep_equal=True)
