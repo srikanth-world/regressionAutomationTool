@@ -25,6 +25,9 @@ def compare_and_merge(file1_path, file2_path, columns_to_compare, output_file_pa
             workbook = writer.book
             worksheet = writer.sheets[sheet_name]
 
+            # Ensure the sheet is visible
+            workbook[sheet_name].sheet_state = 'visible'
+
             # Get the xlsxwriter writer objects
             xlsxwriter_writer = pd.ExcelWriter(output_file_path, engine='openpyxl')
             xlsxwriter_workbook = xlsxwriter_writer.book
