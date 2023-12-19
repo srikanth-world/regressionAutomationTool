@@ -1,14 +1,14 @@
-# Import pandas and openpyxl libraries
 import pandas as pd
 import openpyxl
+from openpyxl.utils.dataframe import dataframe_to_rows
 
 # Read the two excel files and store them in dataframes
 df1 = pd.read_excel("file1.xlsx")
 df2 = pd.read_excel("file2.xlsx")
 
-# Set the index of the dataframes using the 'Q' column
-df1 = df1.set_index('Q')
-df2 = df2.set_index('Q')
+# Align DataFrames based on columns and indexes
+df1, df2 = df1.align(df2, axis=1, join='outer')
+df1, df2 = df1.align(df2, axis=0, join='outer')
 
 # Find the differences between the two dataframes
 diff = df1.compare(df2, keep_equal=True)
@@ -30,7 +30,7 @@ highlight = openpyxl.styles.PatternFill(start_color="FFFF00", end_color="FFFF00"
 # Loop through the differences and apply the highlight style to the corresponding cells in the workbook
 for row in diff.index:
     for col in diff.columns:
-        cell = ws.cell(row=row+2, column=col+1)
+        cell = ws.cell(row=row + 2, column=col + 1)
         cell.fill = highlight
 
 # Save the workbook as a new file
