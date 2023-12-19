@@ -29,13 +29,8 @@ highlight = openpyxl.styles.PatternFill(start_color="FFFF00", end_color="FFFF00"
 
 # Loop through the differences and apply the highlight style to the corresponding cells in the workbook
 for (row, col), value in diff.items():
-    try:
-        row = int(row)
-        col = int(col)
-        cell = ws.cell(row=row + 2, column=col + 1)
-        cell.fill = highlight
-    except ValueError:
-        print(f"Skipping invalid indices: row={row}, col={col}")
+    cell = ws.cell(row=row + 2, column=col + 1)
+    cell.fill = highlight
 
 # Save the workbook as a new file
 wb.save("file3.xlsx")
