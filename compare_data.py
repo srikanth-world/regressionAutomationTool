@@ -1,31 +1,37 @@
-# Write Python3 code here 
-# importing Pandas 
+import pandas as pd
+from openpyxl import load_workbook
+from openpyxl.styles import PatternFill
 
-import pandas as pd 
+# Function to highlight differences in Excel sheet
+def highlight_differences(df1, df2, sheet, fill_color="FFFF00"):
+    for col in df1.columns:
+        for row in df1.index:
+            if df1.at[row, col] != df2.at[row, col]:
+                cell = sheet.cell(row=row + 2, column=df1.columns.get_loc(col) + 1)
+                cell.fill = PatternFill(start_color=fill_color, end_color=fill_color, fill_type="solid")
 
-#Reading two Excel Sheets 
+# Reading two Excel sheets
+sheet1 = pd.read_excel(r'Book1.xlsx')
+sheet2 = pd.read_excel(r'Book2.xlsx')
 
-sheet1 = pd.read_excel(r'Book1.xlsx') 
-sheet2 = pd.read_excel(r'Book2.xlsx') 
+# Compare two dataframes
+differences = (sheet1 != sheet2).stack()
 
-# Iterating the Columns Names of both Sheets 
-for i,j in zip(sheet1,sheet2): 
-	
-	# Creating empty lists to append the columns values	 
-	a,b =[],[] 
+# Create a dataframe of differences
+changed = differences[differences].reset_index()
+changed.columns = ["Row", "Column", "Sheet1", "Sheet2"]
 
-	# Iterating the columns values 
-	for m, n in zip(sheet1[i],sheet2[j]): 
+# Write the full data to output Excel file
+with pd.ExcelWriter('output.xlsx', engine='openpyxl') as writer:
+    sheet1.to_excel(writer, sheet_name='Sheet1', index=False)
+    sheet2.to_excel(writer, sheet_name='Sheet2', index=False)
 
-		# Appending values in lists 
-		a.append(m) 
-		b.append(n) 
+    # Access the output Excel file
+    workbook = writer.book
+    sheet = workbook['Sheet1']
 
-	# Sorting the lists 
-	a.sort() 
-	b.sort() 
+    # Highlight the differences in Sheet1
+    highlight_differences(sheet1, sheet2, sheet)
 
-	# Iterating the list's values and comparing them 
-	for m, n in zip(range(len(a)), range(len(b))): 
-		if a[m] != b[n]: 
-			print('Column name : \'{}\' and Row Number : {}'.format(i,m)) 
+    # Save the workbook
+    writer.save()
