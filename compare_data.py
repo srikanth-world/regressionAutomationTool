@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 from openpyxl import load_workbook
+from openpyxl import Workbook
 from openpyxl.styles import PatternFill
 
 def compare_and_merge(path1, path2, output_path):
@@ -14,7 +15,7 @@ def compare_and_merge(path1, path2, output_path):
         file2_path = os.path.join(path2, file)
 
         # Create a new workbook
-        merged_workbook = load_workbook()
+        merged_workbook = Workbook()
 
         # Load Excel files into pandas dataframes
         df1 = pd.read_excel(file1_path, engine='openpyxl', sheet_name=None)
@@ -22,7 +23,7 @@ def compare_and_merge(path1, path2, output_path):
 
         # Create a writer for the merged and highlighted dataframe
         writer = pd.ExcelWriter(os.path.join(output_path, f'Merged_{file}'), engine='openpyxl')
-        writer.book = merged_workbook
+        writer.book = load_workbook(os.path.join(output_path, f'Merged_{file}'))
 
         # Iterate through sheets
         for sheet_name in set(df1.keys()).intersection(df2.keys()):
