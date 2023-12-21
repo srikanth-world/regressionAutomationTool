@@ -14,8 +14,8 @@ def compare_and_merge(path1, path2, output_path):
         file2_path = os.path.join(path2, file)
 
         # Load Excel files into pandas dataframes
-        df1 = pd.read_excel(file1_path, engine='openpyxl', sheet_name=None)
-        df2 = pd.read_excel(file2_path, engine='openpyxl', sheet_name=None)
+        df1 = pd.read_excel(file1_path, engine='openpyxl', sheet_name=None, header=1)
+        df2 = pd.read_excel(file2_path, engine='openpyxl', sheet_name=None, header=1)
 
         # Create a new workbook
         merged_workbook = Workbook()
@@ -30,15 +30,17 @@ def compare_and_merge(path1, path2, output_path):
             sheet_df1 = df1.get(sheet_name, pd.DataFrame())
             sheet_df2 = df2.get(sheet_name, pd.DataFrame())
 
-            # Compare dataframes cell by cell
-            diff = (sheet_df1 != sheet_df2)
+            # Identify differences
+            diff_cells = (sheet_df1 != sheet_df2)
 
-            # Highlight differences in the merged dataframe
-            diff_styled = pd.DataFrame(index=sheet_df1.index, columns=sheet_df1.columns)
-            diff_styled = diff_styled.style.applymap(lambda x: 'background-color: yellow', subset=pd.IndexSlice[diff])
+            # Merge old and new data
+            merged_df = sheet_df1.combine_first(sheet_df2)
+
+            # Create a Pandas Styler object to highlight differences in yellow
+            styler = merged_df.style.applymap(lambda x: 'background-color: yellow' if diff_cells.at[x] else '', subset=pd.IndexSlice[diff_cells])
 
             # Write the merged and highlighted dataframe to the Excel file
-            diff_styled.to_excel(writer, index=False, sheet_name=sheet_name)
+            styler.to_excel(writer, index=False, sheet_name=sheet_name)
 
         # Save the merged and highlighted workbook
         writer.save()
