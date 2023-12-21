@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 from openpyxl import Workbook
+from openpyxl.styles import PatternFill
 
 def compare_and_merge(path1, path2, output_path):
     # Get all Excel files in the given paths
@@ -16,6 +17,9 @@ def compare_and_merge(path1, path2, output_path):
         df1 = pd.read_excel(file1_path, engine='openpyxl', sheet_name=None, header=1)
         df2 = pd.read_excel(file2_path, engine='openpyxl', sheet_name=None, header=1)
 
+        # Create a new workbook
+        merged_workbook = Workbook()
+
         # Iterate through sheets
         for sheet_name in set(df1.keys()).union(df2.keys()):
             # Get dataframes for each sheet
@@ -29,10 +33,15 @@ def compare_and_merge(path1, path2, output_path):
             merged_df = sheet_df1.combine_first(sheet_df2)
 
             # Create a Pandas Styler object to highlight differences in yellow
-            styler = merged_df.style.applymap(lambda x: 'background-color: yellow' if diff_cells.at[x] else '', subset=pd.IndexSlice[diff_cells])
+            styler = merged_df.style.applymap(lambda x: 'background-color: yellow' if diff_cells.at[x] else '', subset=diff_cells)
 
-            # Save the merged and highlighted dataframe to the Excel file
-            styler.to_excel(os.path.join(output_path, f'Merged_{file}'), index=False, sheet_name=sheet_name)
+            # Get the active sheet from the new workbook
+            sheet = merged_workbook.active
+            # Convert the styled DataFrame to Excel
+            pd.io.formats.excel.format.ExcelFormatter(styler).write(sheet)
+
+        # Save the merged and highlighted workbook
+        merged_workbook.save(os.path.join(output_path, f'Merged_{file}'))
 
 if __name__ == "__main__":
     # Replace these paths with your actual paths
