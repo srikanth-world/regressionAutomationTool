@@ -29,17 +29,17 @@ def compare_and_merge(path1, path2, output_path):
             sheet_df1 = df1.get(sheet_name, pd.DataFrame())
             sheet_df2 = df2.get(sheet_name, pd.DataFrame())
 
-            # Identify differences
-            diff_cells = (sheet_df1 != sheet_df2)
+            # Merge old and new data, handling the index mismatch
+            merged_df = sheet_df1.merge(sheet_df2, how='outer', left_index=True, right_index=True, suffixes=('_1', '_2'))
 
-            # Merge old and new data
-            merged_df = sheet_df1.combine_first(sheet_df2)
+            # Identify differences
+            diff_cells = (merged_df.filter(regex=('_1$')) != merged_df.filter(regex=('_2$')))
 
             # Create a Pandas Styler object to highlight differences in yellow
-            styler = merged_df.style.applymap(lambda x: 'background-color: yellow' if diff_cells.iloc[x] else '', subset=diff_cells)
+            styler = merged_df.style.applymap(lambda x: 'background-color: yellow' if diff_cells.at[x] else '', subset=diff_cells)
 
             # Write the merged and highlighted dataframe to the Excel file
-            styler.to_excel(writer.sheets[sheet_name], index=False, sheet_name=sheet_name, startrow=1, startcol=0)
+            styler.to_excel(writer, index=False, sheet_name=sheet_name)
 
         # Save the merged and highlighted workbook
         writer.save()
