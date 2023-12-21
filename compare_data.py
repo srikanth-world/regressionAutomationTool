@@ -1,7 +1,6 @@
 import os
 import pandas as pd
-from openpyxl import load_workbook
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.styles import PatternFill
 
 def compare_and_merge(path1, path2, output_path):
@@ -14,22 +13,22 @@ def compare_and_merge(path1, path2, output_path):
         file1_path = os.path.join(path1, file)
         file2_path = os.path.join(path2, file)
 
-        # Create a new workbook
-        merged_workbook = Workbook()
-
         # Load Excel files into pandas dataframes
         df1 = pd.read_excel(file1_path, engine='openpyxl', sheet_name=None)
         df2 = pd.read_excel(file2_path, engine='openpyxl', sheet_name=None)
 
+        # Create a new workbook
+        merged_workbook = Workbook()
+
         # Create a writer for the merged and highlighted dataframe
         writer = pd.ExcelWriter(os.path.join(output_path, f'Merged_{file}'), engine='openpyxl')
-        writer.book = load_workbook(os.path.join(output_path, f'Merged_{file}'))
+        writer.book = merged_workbook
 
         # Iterate through sheets
-        for sheet_name in set(df1.keys()).intersection(df2.keys()):
+        for sheet_name in set(df1.keys()).union(df2.keys()):
             # Get dataframes for each sheet
-            sheet_df1 = df1[sheet_name]
-            sheet_df2 = df2[sheet_name]
+            sheet_df1 = df1.get(sheet_name, pd.DataFrame())
+            sheet_df2 = df2.get(sheet_name, pd.DataFrame())
 
             # Compare dataframes cell by cell
             diff = (sheet_df1 != sheet_df2)
