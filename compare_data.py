@@ -17,17 +17,28 @@ def compare_and_merge(path1, path2, output_path):
         df1 = pd.read_excel(file1_path, engine='openpyxl', sheet_name=None)
         df2 = pd.read_excel(file2_path, engine='openpyxl', sheet_name=None)
 
-        # Find differences between dataframes
-        diff = pd.concat([df1[key] for key in df1] + [df2[key] for key in df2]).drop_duplicates(keep=False)
+        # Create a writer for the merged and highlighted dataframe
+        writer = pd.ExcelWriter(os.path.join(output_path, f'Merged_{file}'), engine='openpyxl')
+        writer.book = load_workbook(os.path.join(output_path, f'Merged_{file}'))
 
-        # Highlight differences in the merged dataframe
-        diff_styled = diff.style.applymap(lambda x: 'background-color: yellow', subset=pd.IndexSlice[:, :])
+        # Iterate through sheets
+        for sheet_name in set(df1.keys()).intersection(df2.keys()):
+            # Get dataframes for each sheet
+            sheet_df1 = df1[sheet_name]
+            sheet_df2 = df2[sheet_name]
 
-        # Write the merged and highlighted dataframe to a new Excel file
-        with pd.ExcelWriter(os.path.join(output_path, f'Merged_{file}'), engine='openpyxl') as writer:
-            for sheet_name, sheet_df in diff.items():
-                sheet_df.to_excel(writer, index=False, sheet_name=sheet_name)
-                writer.sheets[sheet_name].sheet_view.tabSelected = True
+            # Compare dataframes cell by cell
+            diff = (sheet_df1 != sheet_df2)
+
+            # Highlight differences in the merged dataframe
+            diff_styled = pd.DataFrame(index=sheet_df1.index, columns=sheet_df1.columns)
+            diff_styled = diff_styled.style.applymap(lambda x: 'background-color: yellow', subset=pd.IndexSlice[diff])
+
+            # Write the merged and highlighted dataframe to the Excel file
+            diff_styled.to_excel(writer, index=False, sheet_name=sheet_name)
+
+        # Save the merged and highlighted workbook
+        writer.save()
 
 if __name__ == "__main__":
     # Replace these paths with your actual paths
