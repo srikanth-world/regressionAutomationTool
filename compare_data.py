@@ -33,7 +33,7 @@ def compare_and_merge(path1, path2, output_path):
             merged_df = sheet_df1.merge(sheet_df2, how='outer', left_index=True, right_index=True, suffixes=('_1', '_2'))
 
             # Identify differences
-            diff_cells = (merged_df.filter(regex=('_1$')) != merged_df.filter(regex=('_2$')))
+            diff_cells = (merged_df.filter(like='_1').values != merged_df.filter(like='_2').values)
 
             # Create a Pandas Styler object to highlight differences in yellow
             styler = merged_df.style.applymap(lambda x: 'background-color: yellow' if diff_cells.at[x] else '', subset=diff_cells)
