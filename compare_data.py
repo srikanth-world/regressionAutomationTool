@@ -29,14 +29,18 @@ def compare_and_merge(path1, path2, output_path):
             sheet_df1 = df1.get(sheet_name, pd.DataFrame())
             sheet_df2 = df2.get(sheet_name, pd.DataFrame())
 
-            # Merge old and new data, handling the index mismatch
-            merged_df = sheet_df1.merge(sheet_df2, how='outer', left_index=True, right_index=True, suffixes=('_1', '_2'))
+            # Ensure both DataFrames have the same indices and columns
+            common_index = sheet_df1.index.union(sheet_df2.index)
+            common_columns = sheet_df1.columns.union(sheet_df2.columns)
+
+            sheet_df1 = sheet_df1.reindex(index=common_index, columns=common_columns, fill_value=None)
+            sheet_df2 = sheet_df2.reindex(index=common_index, columns=common_columns, fill_value=None)
 
             # Identify differences
-            diff_cells = (merged_df.filter(like='_1').values != merged_df.filter(like='_2').values)
+            diff_cells = (sheet_df1.values != sheet_df2.values)
 
             # Create a Pandas Styler object to highlight differences in yellow
-            styler = merged_df.style.applymap(lambda x: 'background-color: yellow' if diff_cells.at[x] else '', subset=diff_cells)
+            styler = sheet_df1.style.applymap(lambda x: 'background-color: yellow' if diff_cells.at[x] else '', subset=diff_cells)
 
             # Write the merged and highlighted dataframe to the Excel file
             styler.to_excel(writer, index=False, sheet_name=sheet_name)
