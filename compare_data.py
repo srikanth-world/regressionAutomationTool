@@ -13,13 +13,16 @@ def compare_and_merge(path1, path2, output_path):
         file1_path = os.path.join(path1, file)
         file2_path = os.path.join(path2, file)
 
+        # Create a new workbook
+        merged_workbook = load_workbook()
+
         # Load Excel files into pandas dataframes
         df1 = pd.read_excel(file1_path, engine='openpyxl', sheet_name=None)
         df2 = pd.read_excel(file2_path, engine='openpyxl', sheet_name=None)
 
         # Create a writer for the merged and highlighted dataframe
         writer = pd.ExcelWriter(os.path.join(output_path, f'Merged_{file}'), engine='openpyxl')
-        writer.book = load_workbook(os.path.join(output_path, f'Merged_{file}'))
+        writer.book = merged_workbook
 
         # Iterate through sheets
         for sheet_name in set(df1.keys()).intersection(df2.keys()):
