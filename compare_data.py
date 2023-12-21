@@ -1,37 +1,36 @@
+import os
 import pandas as pd
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
 
-# Function to highlight differences in Excel sheet
-def highlight_differences(df1, df2, sheet, fill_color="FFFF00"):
-    for col in df1.columns:
-        for row in df1.index:
-            if df1.at[row, col] != df2.at[row, col]:
-                cell = sheet.cell(row=row + 2, column=df1.columns.get_loc(col) + 1)
-                cell.fill = PatternFill(start_color=fill_color, end_color=fill_color, fill_type="solid")
+def compare_and_merge(path1, path2, output_path):
+    # Get all Excel files in the given paths
+    files1 = [f for f in os.listdir(path1) if f.endswith('.xlsx')]
+    files2 = [f for f in os.listdir(path2) if f.endswith('.xlsx')]
 
-# Reading two Excel sheets
-sheet1 = pd.read_excel(r'Book1.xlsx')
-sheet2 = pd.read_excel(r'Book2.xlsx')
+    # Iterate through common files
+    for file in set(files1).intersection(files2):
+        file1_path = os.path.join(path1, file)
+        file2_path = os.path.join(path2, file)
 
-# Compare two dataframes
-differences = (sheet1 != sheet2).stack()
+        # Load Excel files into pandas dataframes
+        df1 = pd.read_excel(file1_path, engine='openpyxl')
+        df2 = pd.read_excel(file2_path, engine='openpyxl')
 
-# Create a dataframe of differences
-changed = differences[differences].reset_index()
-changed.columns = ["Row", "Column", "Sheet1", "Sheet2"]
+        # Find differences between dataframes
+        diff = pd.concat([df1, df2]).drop_duplicates(keep=False)
 
-# Write the full data to output Excel file
-with pd.ExcelWriter('output.xlsx', engine='openpyxl') as writer:
-    sheet1.to_excel(writer, sheet_name='Sheet1', index=False)
-    sheet2.to_excel(writer, sheet_name='Sheet2', index=False)
+        # Highlight differences in the merged dataframe
+        diff_styled = diff.style.applymap(lambda x: 'background-color: yellow', subset=pd.IndexSlice[:, :])
 
-    # Access the output Excel file
-    workbook = writer.book
-    sheet = workbook['Sheet1']
+        # Write the merged and highlighted dataframe to a new Excel file
+        with pd.ExcelWriter(os.path.join(output_path, f'Merged_{file}'), engine='openpyxl') as writer:
+            diff_styled.to_excel(writer, index=False, sheet_name='Merged')
 
-    # Highlight the differences in Sheet1
-    highlight_differences(sheet1, sheet2, sheet)
+if __name__ == "__main__":
+    # Replace these paths with your actual paths
+    path1 = 'path/to/excels1'
+    path2 = 'path/to/excels2'
+    output_path = 'path/to/output'
 
-    # Save the workbook
-    writer.save()
+    compare_and_merge(path1, path2, output_path)
