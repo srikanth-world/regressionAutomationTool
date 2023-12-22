@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 from openpyxl import Workbook
+from openpyxl.utils.dataframe import dataframe_to_rows
 
 def compare_and_merge(path1, path2, output_path):
     # Get all Excel files in the given paths
@@ -19,10 +20,6 @@ def compare_and_merge(path1, path2, output_path):
         # Create a new workbook
         merged_workbook = Workbook()
 
-        # Create an ExcelWriter object
-        writer = pd.ExcelWriter(os.path.join(output_path, f'Merged_{file}'), engine='openpyxl')
-        writer.book = merged_workbook
-
         # Iterate through sheets
         for sheet_name in set(df1.keys()).union(df2.keys()):
             # Get dataframes for each sheet
@@ -39,14 +36,33 @@ def compare_and_merge(path1, path2, output_path):
             # Identify differences
             diff_cells = (sheet_df1.values != sheet_df2.values)
 
+            # Merge old and new data
+            merged_df = sheet_df1.combine_first(sheet_df2)
+
             # Create a Pandas Styler object to highlight differences in yellow
-            styler = sheet_df1.style.applymap(lambda x: 'background-color: yellow' if diff_cells.at[x] else '', subset=diff_cells)
+            styler = merged_df.style.applymap(lambda x: 'background-color: yellow' if diff_cells.at[x] else '', subset=diff_cells)
 
-            # Write the merged and highlighted dataframe to the Excel file
-            styler.to_excel(writer, index=False, sheet_name=sheet_name)
+            # Create a new sheet in the merged workbook
+            merged_sheet = merged_workbook.create_sheet(title=sheet_name)
 
-        # Save the merged and highlighted workbook
-        writer.save()
+            # Write the header row
+            header_row = list(merged_df.columns)
+            merged_sheet.append(header_row)
+
+            # Write data to the sheet using dataframe_to_rows
+            for row in dataframe_to_rows(merged_df, index=False, header=False):
+                merged_sheet.append(row)
+
+            # Apply the styling
+            for row in merged_sheet.iter_rows(min_row=2, max_row=merged_sheet.max_row, min_col=1, max_col=merged_sheet.max_column):
+                for cell in row:
+                    cell.style = styler.use_diff_style(diff_cells, cell.coordinate)
+
+        # Remove the default sheet created by openpyxl
+        merged_workbook.remove(merged_workbook.active)
+
+        # Save the merged workbook
+        merged_workbook.save(os.path.join(output_path, f'Merged_{file}'))
 
 if __name__ == "__main__":
     # Replace these paths with your actual paths
