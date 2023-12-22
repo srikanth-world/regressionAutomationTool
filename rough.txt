@@ -3,3 +3,14 @@ for row_idx, row in enumerate(merged_sheet.iter_rows(min_row=3, max_row=min(merg
     for col_idx, cell in enumerate(row, start=1):
         if diff_cells[row_idx - 3, col_idx - 1]:  # Adjust indices for 0-based indexing
             cell.fill = openpyxl.styles.PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+
+
+
+===========
+
+# Iterate through columns to highlight unique values
+for col_idx, col in enumerate(sheet_df1.columns, start=1):
+    for row_idx, cell in enumerate(merged_sheet[col], start=2):
+        if row_idx <= len(unique_values) and cell.value == unique_values.at[row_idx, col]:
+            cell.fill = openpyxl.styles.PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+
