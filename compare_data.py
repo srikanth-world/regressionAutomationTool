@@ -47,14 +47,21 @@ def compare_and_merge(path1, path2, output_path):
             header_row = list(merged_df.columns)
             merged_sheet.append(header_row)
 
-            # Write data to the sheet using dataframe_to_rows
-            for row in dataframe_to_rows(merged_df, index=False, header=False):
+            # Write data from the first dataset
+            for row in dataframe_to_rows(sheet_df1, index=False, header=False):
+                merged_sheet.append(row)
+
+            # Write an empty row as a separator
+            merged_sheet.append([])
+
+            # Write data from the second dataset
+            for row in dataframe_to_rows(sheet_df2, index=False, header=False):
                 merged_sheet.append(row)
 
             # Apply styling to highlight differences
-            for row_idx, row in enumerate(merged_sheet.iter_rows(min_row=2, max_row=merged_sheet.max_row, min_col=1, max_col=merged_sheet.max_column), start=2):
+            for row_idx, row in enumerate(merged_sheet.iter_rows(min_row=3, max_row=merged_sheet.max_row, min_col=1, max_col=merged_sheet.max_column), start=3):
                 for col_idx, cell in enumerate(row, start=1):
-                    if diff_cells[row_idx - 2, col_idx - 1]:  # Adjust indices for 0-based indexing
+                    if diff_cells[row_idx - 3, col_idx - 1]:  # Adjust indices for 0-based indexing
                         cell.fill = openpyxl.styles.PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
 
         # Remove the default sheet created by openpyxl
