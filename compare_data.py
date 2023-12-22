@@ -1,8 +1,7 @@
 import os
 import pandas as pd
 from openpyxl import Workbook, load_workbook
-from openpyxl.utils.dataframe import dataframe_to_rows
-import openpyxl.styles
+from openpyxl.styles import PatternFill
 
 def compare_and_merge(path1, path2, output_path):
     # Get all Excel files in the given paths
@@ -37,8 +36,8 @@ def compare_and_merge(path1, path2, output_path):
             # Write data from the first dataset with header
             if not sheet_df1.empty:
                 merged_sheet.append([f'\n{sheet_name} from File 1'])
-                for row in dataframe_to_rows(sheet_df1, index=False, header=True):
-                    merged_sheet.append(row)
+                for row in sheet_df1.iterrows():
+                    merged_sheet.append(row[1].tolist())
 
             # Write an empty row as a separator
             merged_sheet.append([])
@@ -46,8 +45,8 @@ def compare_and_merge(path1, path2, output_path):
             # Write data from the second dataset with header
             if not sheet_df2.empty:
                 merged_sheet.append([f'\n{sheet_name} from File 2'])
-                for row in dataframe_to_rows(sheet_df2, index=False, header=True):
-                    merged_sheet.append(row)
+                for row in sheet_df2.iterrows():
+                    merged_sheet.append(row[1].tolist())
 
             # Identify unique values and highlight in the merged sheet
             highlight_unique_values(merged_sheet, sheet_df1, sheet_df2)
@@ -56,19 +55,12 @@ def compare_and_merge(path1, path2, output_path):
         merged_workbook.save(os.path.join(output_path, f'Merged_{file}'))
 
 def highlight_unique_values(merged_sheet, sheet_df1, sheet_df2):
-    # Ensure that the diff_cells DataFrame has the same indices as the merged_df DataFrame
-    sheet_df1 = sheet_df1.set_index(list(sheet_df1.columns))
-    sheet_df2 = sheet_df2.set_index(list(sheet_df2.columns))
-    merged_sheet = merged_sheet.set_index(list(merged_sheet.columns))
-
-    # Identify unique values in each column
-    unique_values = sheet_df1[~sheet_df1.index.isin(sheet_df2.index)]
-
-    # Iterate through columns to highlight unique values
-    for col_idx, col in enumerate(sheet_df1.columns, start=1):
-        for row_idx, cell in enumerate(merged_sheet[col], start=2):
-            if row_idx <= len(unique_values) and cell.value == unique_values.at[unique_values.index[row_idx - 1], col]:
-                cell.fill = openpyxl.styles.PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+    for row_idx, row in enumerate(merged_sheet.iter_rows(min_row=2, max_row=merged_sheet.max_row, min_col=1, max_col=merged_sheet.max_column), start=2):
+        for col_idx, cell in enumerate(row, start=1):
+            if (
+                sheet_df1.iat[row_idx - 2, col_idx - 1] != sheet_df2.iat[row_idx - 2, col_idx - 1]
+            ):
+                cell.fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
 
 if __name__ == "__main__":
     # Replace these paths with your actual paths
