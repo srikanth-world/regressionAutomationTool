@@ -49,32 +49,21 @@ def compare_and_merge(path1, path2, output_path):
                 for row in dataframe_to_rows(sheet_df2, index=False, header=True):
                     merged_sheet.append(row)
 
-        # Save the merged workbook
-        merged_workbook.save(os.path.join(output_path, f'Merged_{file}'))
+            # Ensure that the diff_cells DataFrame has the same indices as the merged_df DataFrame
+            sheet_df1 = sheet_df1.set_index(list(sheet_df1.columns))
+            sheet_df2 = sheet_df2.set_index(list(sheet_df2.columns))
+            merged_sheet = merged_sheet.set_index(list(merged_sheet.columns))
 
-        # Reload the merged workbook for comparison
-        merged_workbook = load_workbook(os.path.join(output_path, f'Merged_{file}'))
+            # Identify unique values in each column
+            unique_values = sheet_df1[~sheet_df1.index.isin(sheet_df2.index)]
 
-        # Iterate through sheets for comparison
-        for sheet_name, sheet_df in merged_workbook.items():
-            # Skip empty dataframes
-            if sheet_df.max_row == 1:
-                continue
-
-            # Get the corresponding sheets from the original datasets
-            sheet_df1 = df1.get(sheet_name, pd.DataFrame())
-            sheet_df2 = df2.get(sheet_name, pd.DataFrame())
-
-            # Identify differences
-            diff_cells = (sheet_df1.values != sheet_df2.values)
-
-            # Highlight differences in the merged sheet
-            for row_idx, row in enumerate(sheet_df.iter_rows(min_row=2, max_row=sheet_df.max_row, min_col=1, max_col=sheet_df.max_column), start=2):
+            # Highlight unique values in the merged sheet
+            for row_idx, row in enumerate(merged_sheet.iter_rows(min_row=2, max_row=merged_sheet.max_row, min_col=1, max_col=merged_sheet.max_column), start=2):
                 for col_idx, cell in enumerate(row, start=1):
-                    if diff_cells[row_idx - 2, col_idx - 1]:
+                    if cell.value in unique_values.iloc[:, col_idx - 1].tolist():
                         cell.fill = openpyxl.styles.PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
 
-        # Save the updated merged workbook
+        # Save the merged workbook
         merged_workbook.save(os.path.join(output_path, f'Merged_{file}'))
 
 if __name__ == "__main__":
