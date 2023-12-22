@@ -1,7 +1,6 @@
 import os
 import pandas as pd
 from openpyxl import Workbook
-from openpyxl.utils.dataframe import dataframe_to_rows
 import openpyxl.styles
 
 def compare_and_merge(path1, path2, output_path):
@@ -37,8 +36,8 @@ def compare_and_merge(path1, path2, output_path):
             # Write data from the first dataset with header
             if not sheet_df1.empty:
                 merged_sheet.append([f'\n{sheet_name} from File 1'])
-                for row in dataframe_to_rows(sheet_df1, index=False, header=True):
-                    merged_sheet.append(row)
+                for idx, row in sheet_df1.iterrows():
+                    merged_sheet.append(row.tolist())
 
             # Write an empty row as a separator
             merged_sheet.append([])
@@ -46,8 +45,8 @@ def compare_and_merge(path1, path2, output_path):
             # Write data from the second dataset with header
             if not sheet_df2.empty:
                 merged_sheet.append([f'\n{sheet_name} from File 2'])
-                for row in dataframe_to_rows(sheet_df2, index=False, header=True):
-                    merged_sheet.append(row)
+                for idx, row in sheet_df2.iterrows():
+                    merged_sheet.append(row.tolist())
 
             # Identify differences
             diff_cells = (sheet_df1.values != sheet_df2.values)
