@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 from openpyxl import Workbook
+from openpyxl.utils.dataframe import dataframe_to_rows
 import openpyxl.styles
 
 def compare_and_merge(path1, path2, output_path):
@@ -36,8 +37,8 @@ def compare_and_merge(path1, path2, output_path):
             # Write data from the first dataset with header
             if not sheet_df1.empty:
                 merged_sheet.append([f'\n{sheet_name} from File 1'])
-                for idx, row in sheet_df1.iterrows():
-                    merged_sheet.append(row.tolist())
+                for row in dataframe_to_rows(sheet_df1, index=False, header=True):
+                    merged_sheet.append(row)
 
             # Write an empty row as a separator
             merged_sheet.append([])
@@ -45,23 +46,44 @@ def compare_and_merge(path1, path2, output_path):
             # Write data from the second dataset with header
             if not sheet_df2.empty:
                 merged_sheet.append([f'\n{sheet_name} from File 2'])
-                for idx, row in sheet_df2.iterrows():
-                    merged_sheet.append(row.tolist())
+                for row in dataframe_to_rows(sheet_df2, index=False, header=True):
+                    merged_sheet.append(row)
+
+        # Save the merged workbook
+        merged_workbook.save(os.path.join(output_path, f'Merged_{file}'))
+
+        # Reload the merged workbook for comparison
+        merged_df = pd.read_excel(os.path.join(output_path, f'Merged_{file}'), engine='openpyxl', sheet_name=None, header=None)
+
+        # Iterate through sheets for comparison
+        for sheet_name, sheet_df in merged_df.items():
+            # Skip empty dataframes
+            if sheet_df.empty:
+                continue
+
+            # Get the corresponding sheets from the original datasets
+            sheet_df1 = df1.get(sheet_name, pd.DataFrame())
+            sheet_df2 = df2.get(sheet_name, pd.DataFrame())
 
             # Identify differences
             diff_cells = (sheet_df1.values != sheet_df2.values)
 
-            # Highlight differences
-            for row_idx, row in enumerate(merged_sheet.iter_rows(min_row=len(merged_sheet._cells) + 2, max_row=merged_sheet.max_row, min_col=1, max_col=merged_sheet.max_column), start=len(merged_sheet._cells) + 2):
-                for col_idx, cell in enumerate(row, start=1):
-                    if diff_cells[row_idx - len(merged_sheet._cells) - 2, col_idx - 1]:
-                        cell.fill = openpyxl.styles.PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+            # Highlight differences in the merged sheet
+            with pd.ExcelWriter(os.path.join(output_path, f'Merged_{file}'), engine='openpyxl') as writer:
+                writer.book = openpyxl.load_workbook(os.path.join(output_path, f'Merged_{file}'))
+                writer.sheets = {ws.title: ws for ws in writer.book.worksheets}
 
-        # Remove the default sheet created by openpyxl
-        merged_workbook.remove(merged_workbook.active)
+                # Open the corresponding sheet in the merged workbook
+                merged_sheet = writer.sheets[sheet_name]
 
-        # Save the merged workbook
-        merged_workbook.save(os.path.join(output_path, f'Merged_{file}'))
+                # Iterate through cells to highlight differences
+                for row_idx, row in enumerate(merged_sheet.iter_rows(min_row=2, max_row=merged_sheet.max_row, min_col=1, max_col=merged_sheet.max_column), start=2):
+                    for col_idx, cell in enumerate(row, start=1):
+                        if diff_cells[row_idx - 2, col_idx - 1]:
+                            cell.fill = openpyxl.styles.PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+
+                # Save the updated merged workbook
+                writer.book.save(os.path.join(output_path, f'Merged_{file}'))
 
 if __name__ == "__main__":
     # Replace these paths with your actual paths
