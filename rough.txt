@@ -7,10 +7,11 @@ for row_idx, row in enumerate(merged_sheet.iter_rows(min_row=3, max_row=min(merg
 
 
 ===========
+def highlight_unique_values(merged_sheet, sheet_df1, sheet_df2):
+    for row_idx in range(2, min(sheet_df1.shape[0], sheet_df2.shape[0]) + 2):
+        for col_idx in range(1, min(sheet_df1.shape[1], sheet_df2.shape[1]) + 1):
+            cell_value_1 = sheet_df1.iat[row_idx - 2, col_idx - 1]
+            cell_value_2 = sheet_df2.iat[row_idx - 2, col_idx - 1]
 
-# Iterate through columns to highlight unique values
-for col_idx, col in enumerate(sheet_df1.columns, start=1):
-    for row_idx, cell in enumerate(merged_sheet[col], start=2):
-        if row_idx <= len(unique_values) and cell.value == unique_values.at[row_idx, col]:
-            cell.fill = openpyxl.styles.PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
-
+            if cell_value_1 != cell_value_2:
+                merged_sheet.cell(row=row_idx, column=col_idx).fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
