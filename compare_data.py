@@ -67,7 +67,7 @@ def highlight_unique_values(merged_sheet, sheet_df1, sheet_df2):
     # Iterate through columns to highlight unique values
     for col_idx, col in enumerate(sheet_df1.columns, start=1):
         for row_idx, cell in enumerate(merged_sheet[col], start=2):
-            if cell.value == unique_values.at[(col_idx, row_idx)]:
+            if row_idx <= len(unique_values) and cell.value == unique_values.at[unique_values.index[row_idx - 1], col]:
                 cell.fill = openpyxl.styles.PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
 
 if __name__ == "__main__":
