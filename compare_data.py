@@ -49,22 +49,26 @@ def compare_and_merge(path1, path2, output_path):
                 for row in dataframe_to_rows(sheet_df2, index=False, header=True):
                     merged_sheet.append(row)
 
-            # Ensure that the diff_cells DataFrame has the same indices as the merged_df DataFrame
-            sheet_df1 = sheet_df1.set_index(list(sheet_df1.columns))
-            sheet_df2 = sheet_df2.set_index(list(sheet_df2.columns))
-            merged_sheet = merged_sheet.set_index(list(merged_sheet.columns))
-
-            # Identify unique values in each column
-            unique_values = sheet_df1[~sheet_df1.index.isin(sheet_df2.index)]
-
-            # Highlight unique values in the merged sheet
-            for row_idx, row in enumerate(merged_sheet.iter_rows(min_row=2, max_row=merged_sheet.max_row, min_col=1, max_col=merged_sheet.max_column), start=2):
-                for col_idx, cell in enumerate(row, start=1):
-                    if cell.value in unique_values.iloc[:, col_idx - 1].tolist():
-                        cell.fill = openpyxl.styles.PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+            # Identify unique values and highlight in the merged sheet
+            highlight_unique_values(merged_sheet, sheet_df1, sheet_df2)
 
         # Save the merged workbook
         merged_workbook.save(os.path.join(output_path, f'Merged_{file}'))
+
+def highlight_unique_values(merged_sheet, sheet_df1, sheet_df2):
+    # Ensure that the diff_cells DataFrame has the same indices as the merged_df DataFrame
+    sheet_df1 = sheet_df1.set_index(list(sheet_df1.columns))
+    sheet_df2 = sheet_df2.set_index(list(sheet_df2.columns))
+    merged_sheet = merged_sheet.set_index(list(merged_sheet.columns))
+
+    # Identify unique values in each column
+    unique_values = sheet_df1[~sheet_df1.index.isin(sheet_df2.index)]
+
+    # Iterate through columns to highlight unique values
+    for col_idx, col in enumerate(sheet_df1.columns, start=1):
+        for row_idx, cell in enumerate(merged_sheet[col], start=2):
+            if cell.value == unique_values.at[(col_idx, row_idx)]:
+                cell.fill = openpyxl.styles.PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
 
 if __name__ == "__main__":
     # Replace these paths with your actual paths
