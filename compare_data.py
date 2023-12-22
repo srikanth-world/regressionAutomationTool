@@ -2,6 +2,7 @@ import os
 import pandas as pd
 from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
+import openpyxl.styles
 
 def compare_and_merge(path1, path2, output_path):
     # Get all Excel files in the given paths
@@ -39,9 +40,6 @@ def compare_and_merge(path1, path2, output_path):
             # Merge old and new data
             merged_df = sheet_df1.combine_first(sheet_df2)
 
-            # Create a Pandas Styler object to highlight differences in yellow
-            styler = merged_df.style.applymap(lambda x: 'background-color: yellow' if diff_cells.at[x] else '', subset=diff_cells)
-
             # Create a new sheet in the merged workbook
             merged_sheet = merged_workbook.create_sheet(title=sheet_name)
 
@@ -53,10 +51,11 @@ def compare_and_merge(path1, path2, output_path):
             for row in dataframe_to_rows(merged_df, index=False, header=False):
                 merged_sheet.append(row)
 
-            # Apply the styling
-            for row in merged_sheet.iter_rows(min_row=2, max_row=merged_sheet.max_row, min_col=1, max_col=merged_sheet.max_column):
-                for cell in row:
-                    cell.style = styler.use_diff_style(diff_cells, cell.coordinate)
+            # Apply styling to highlight differences
+            for row_idx, row in enumerate(merged_sheet.iter_rows(min_row=2, max_row=merged_sheet.max_row, min_col=1, max_col=merged_sheet.max_column), start=2):
+                for col_idx, cell in enumerate(row, start=1):
+                    if diff_cells[row_idx - 2, col_idx - 1]:  # Adjust indices for 0-based indexing
+                        cell.fill = openpyxl.styles.PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
 
         # Remove the default sheet created by openpyxl
         merged_workbook.remove(merged_workbook.active)
