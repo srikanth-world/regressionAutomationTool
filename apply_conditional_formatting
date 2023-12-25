@@ -15,9 +15,9 @@ def apply_conditional_formatting(file_path):
     for row in dataframe_to_rows(df, index=True, header=True):
         ws.append(row)
 
-    # Apply conditional formatting to each column
+   # Apply conditional formatting to each column
     for col_idx, col in enumerate(df.columns, start=1):
-        unique_values = df[col].unique()
+        unique_values = df[col].dropna().unique()
         for row_idx, cell in enumerate(ws[col], start=2):
             if cell.value in unique_values and list(ws[col]).count(cell.value) == 1:
                 cell.fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
