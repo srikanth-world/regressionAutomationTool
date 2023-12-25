@@ -1,35 +1,31 @@
+# Import the openpyxl library
 import openpyxl
-from openpyxl.styles import PatternFill
-from openpyxl.utils.dataframe import dataframe_to_rows
-import pandas as pd
 
-def apply_conditional_formatting(file_path):
-    # Load the Excel file into a pandas DataFrame
-    df = pd.read_excel(file_path, header=[0, 1], index_col=0)
+# Load the Excel file
+wb = openpyxl.load_workbook('your_file.xlsx')
 
-    # Create a new workbook
-    wb = openpyxl.Workbook()
-    ws = wb.active
+# Select the worksheet
+ws = wb['Sheet1']
 
-    # Write the DataFrame to the worksheet
-    for row in dataframe_to_rows(df, index=True, header=True):
-        ws.append(row)
+# Loop through the columns starting from row 2
+for col in ws.iter_cols(min_row=2):
 
- # Apply conditional formatting to each column
-    for col in df.columns.levels[0]:
-        col_index = df.columns.get_loc((col, df.columns.levels[1][0]))
-        unique_values = df[col].apply(lambda x: x.duplicated(keep=False))
-        for row_idx in range(2, ws.max_row + 1):
-            cell = ws.cell(row=row_idx, column=col_index + 1)  # Adjust to 1-based index
-            if unique_values.iloc[row_idx - 2]:
-                cell.fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+    # Create a set to store the unique values
+    unique_values = set()
 
+    # Loop through the cells in the column
+    for cell in col:
 
+        # Check if the cell value is already in the set
+        if cell.value in unique_values:
 
-    # Save the updated workbook
-    output_path = file_path.replace('.xlsx', '_formatted.xlsx')
-    wb.save(output_path)
+            # Highlight the cell with yellow color
+            cell.fill = openpyxl.styles.PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
 
-# Example usage:
-file_path = 'path/to/your/excel_file.xlsx'
-apply_conditional_formatting(file_path)
+        else:
+
+            # Add the cell value to the set
+            unique_values.add(cell.value)
+
+# Save the Excel file
+wb.save('your_file.xlsx')
