@@ -16,10 +16,10 @@ def apply_conditional_formatting(file_path):
         ws.append(row)
 
   # Apply conditional formatting to each column
-    for col_idx, col in enumerate(df.columns, start=1):
-        unique_values = set(df[col].dropna())
+    for col in df.columns.levels[0]:
+        unique_values = df[col].droplevel(0).duplicated(keep=False)
         for row_idx, cell in enumerate(ws[col], start=2):
-            if cell.value in unique_values and list(ws[col]).count(cell.value) == 1:
+            if unique_values.iloc[row_idx - 2]:
                 cell.fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
 
     # Save the updated workbook
