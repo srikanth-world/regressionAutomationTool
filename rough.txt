@@ -7,11 +7,9 @@ for row_idx, row in enumerate(merged_sheet.iter_rows(min_row=3, max_row=min(merg
 
 
 ===========
-def highlight_unique_values(merged_sheet, sheet_df1, sheet_df2):
-    for row_idx in range(2, min(sheet_df1.shape[0], sheet_df2.shape[0]) + 2):
-        for col_idx in range(1, min(sheet_df1.shape[1], sheet_df2.shape[1]) + 1):
-            cell_value_1 = sheet_df1.iat[row_idx - 2, col_idx - 1]
-            cell_value_2 = sheet_df2.iat[row_idx - 2, col_idx - 1]
-
-            if cell_value_1 != cell_value_2:
-                merged_sheet.cell(row=row_idx, column=col_idx).fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+# Apply conditional formatting to each column
+    for col_idx, col in enumerate(df.columns, start=1):
+        unique_values = df[col].unique()
+        for row_idx, cell in enumerate(ws[col], start=2):
+            if cell.value in unique_values and list(ws[col]).count(cell.value) == 1:
+                cell.fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
