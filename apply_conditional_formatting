@@ -1,0 +1,31 @@
+import openpyxl
+from openpyxl.styles import PatternFill
+from openpyxl.utils.dataframe import dataframe_to_rows
+import pandas as pd
+
+def apply_conditional_formatting(file_path):
+    # Load the Excel file into a pandas DataFrame
+    df = pd.read_excel(file_path, header=[0, 1], index_col=0)
+
+    # Create a new workbook
+    wb = openpyxl.Workbook()
+    ws = wb.active
+
+    # Write the DataFrame to the worksheet
+    for row in dataframe_to_rows(df, index=True, header=True):
+        ws.append(row)
+
+    # Apply conditional formatting to each column
+    for col_idx, col in enumerate(df.columns, start=1):
+        unique_values = df[col].unique()
+        for row_idx, cell in enumerate(ws[col], start=2):
+            if cell.value in unique_values and list(ws[col]).count(cell.value) == 1:
+                cell.fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+
+    # Save the updated workbook
+    output_path = file_path.replace('.xlsx', '_formatted.xlsx')
+    wb.save(output_path)
+
+# Example usage:
+file_path = 'path/to/your/excel_file.xlsx'
+apply_conditional_formatting(file_path)
