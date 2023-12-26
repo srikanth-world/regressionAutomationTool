@@ -3,7 +3,7 @@ import pandas as pd
 def highlight_unique_cells(val):
     return 'background-color: yellow'
 
-def process_sheet(sheet_df):
+def process_sheet(sheet_name, sheet_df):
     # Identify the rows where sections start
     section_starts = sheet_df[0].isin(['q02', 'q03'])
 
@@ -30,5 +30,5 @@ excel_file = pd.ExcelFile(file_path)
 with pd.ExcelWriter('output_highlighted.xlsx', engine='openpyxl') as writer:
     for sheet_name in excel_file.sheet_names:
         sheet_df = pd.read_excel(file_path, sheet_name, header=None)
-        styled_df = process_sheet(sheet_df)
+        styled_df = process_sheet(sheet_name, sheet_df)
         styled_df.to_excel(writer, sheet_name=sheet_name, index=False)
