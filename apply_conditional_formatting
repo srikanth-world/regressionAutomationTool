@@ -3,21 +3,21 @@ import pandas as pd
 
 def identify_distinct_cells_columnwise(file_path):
     # Load the Excel file into a pandas DataFrame
-    df = pd.read_excel(file_path, header=[0, 1], index_col=0)
+    df = pd.read_excel(file_path, header=1, index_col=0)
 
     # Create a new workbook for formatting
     wb = openpyxl.Workbook()
     ws = wb.active
 
     # Iterate through each column in the DataFrame
-    for col_idx, col in enumerate(df.columns.levels[0], start=1):
-        column_values = df[col].droplevel(0)
+    for col_idx, col in enumerate(df.columns, start=1):
+        column_values = df[col]
 
         # Use pandas to identify distinct values (unique values)
         unique_values = column_values[column_values.duplicated(keep=False)]
 
         # Apply conditional formatting to each cell with a unique value
-        for row_idx, value in unique_values.items():
+        for row_idx, value in unique_values.iteritems():
             cell = ws.cell(row=row_idx + 1, column=col_idx)  # Adjust to 1-based index
             cell.value = value
             cell.fill = openpyxl.styles.PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
