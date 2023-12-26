@@ -13,34 +13,39 @@ at_least_one_sheet = False
 # Apply the logic to each sheet and save the styled DataFrames to a new Excel file
 with pd.ExcelWriter('output_highlighted.xlsx', engine='openpyxl') as writer:
     for sheet_name, sheet_df in excel_data.items():
-        # Check if sheet is visible (at least one row in the first column)
-        if sheet_df.iloc[:, 0].notna().any():
-            at_least_one_sheet = True
+        try:
+            # Check if sheet is visible (at least one cell in the first column is not empty)
+            if sheet_df.iloc[:, 0].notna().any():
+                at_least_one_sheet = True
 
-            # Check if 'q02' and 'q03' are present in the sheet
-            if 'q02' in sheet_df[0].values and 'q03' in sheet_df[0].values:
-                # Set the first row as the header for each DataFrame
-                sheet_df.columns = sheet_df.iloc[0]
+                # Check if 'q02' and 'q03' are present in the sheet
+                if 'q02' in sheet_df[0].values and 'q03' in sheet_df[0].values:
+                    # Set the first row as the header for each DataFrame
+                    sheet_df.columns = sheet_df.iloc[0]
 
-                # Drop the duplicate header row
-                sheet_df = sheet_df.iloc[1:]
+                    # Drop the duplicate header row
+                    sheet_df = sheet_df.iloc[1:]
 
-                # Split into two DataFrames for each section
-                df_q02 = sheet_df[sheet_df[0] == 'q02'].iloc[:, 1:]
-                df_q03 = sheet_df[sheet_df[0] == 'q03'].iloc[:, 1:]
+                    # Split into two DataFrames for each section
+                    df_q02 = sheet_df[sheet_df[0] == 'q02'].iloc[:, 1:]
+                    df_q03 = sheet_df[sheet_df[0] == 'q03'].iloc[:, 1:]
 
-                # Merge or join DataFrames on the specified columns
-                merged_df = pd.merge(df_q02, df_q03, how='outer', on=join_columns, indicator=True).query('_merge == "right_only"').drop('_merge', axis=1)
+                    # Merge or join DataFrames on the specified columns
+                    merged_df = pd.merge(df_q02, df_q03, how='outer', on=join_columns, indicator=True).query('_merge == "right_only"').drop('_merge', axis=1)
 
-                # Apply styling to the DataFrame
-                def highlight_unique_cells(val):
-                    return 'background-color: yellow' if val in df_q03.values and val not in df_q02.values else ''
+                    # Apply styling to the DataFrame
+                    def highlight_unique_cells(val):
+                        return 'background-color: yellow' if val in df_q03.values and val not in df_q02.values else ''
 
-                styled_df = pd.concat([df_q02, df_q03]).style.applymap(highlight_unique_cells, subset=merged_df.columns)
+                    styled_df = pd.concat([df_q02, df_q03]).style.applymap(highlight_unique_cells, subset=merged_df.columns)
 
-                # Save the styled DataFrame to the Excel file
-                styled_df.to_excel(writer, sheet_name=sheet_name, index=False)
+                    # Save the styled DataFrame to the Excel file
+                    styled_df.to_excel(writer, sheet_name=sheet_name, index=False)
 
-# Print a message if no sheet has both 'q02' and 'q03' sections
+        except IndexError:
+            print(f"Error processing sheet '{sheet_name}'.")
+            continue
+
+# Print a message if no visible sheet is found
 if not at_least_one_sheet:
     print("No visible sheet found in the Excel file.")
