@@ -1,28 +1,34 @@
 import pandas as pd
 
-# Step 1: Read Excel file into DataFrame
-file_path = 'path_to_your_excel_file.xlsx'
-df = pd.read_excel(file_path, header=None)
-
-# Step 2: Identify the rows where sections start
-section_starts = df[0].isin(['q02', 'q03'])
-
-# Step 3: Create DataFrames for each section
-sections = []
-start_idx = 0
-for end_idx in section_starts[section_starts].index:
-    section_df = df.iloc[start_idx:end_idx, :]
-    sections.append(section_df)
-    start_idx = end_idx + 1
-
-# Step 4: Compare sections and identify unique cells in the second section
-unique_cells = sections[1][~sections[1].isin(sections[0])].dropna()
-
-# Step 5: Use a styling function to update the background color of unique cells
 def highlight_unique_cells(val):
-    return 'background-color: yellow' if val in unique_cells.values else ''
+    return 'background-color: yellow'
 
-styled_df = pd.concat([sections[0], sections[1]]).style.applymap(highlight_unique_cells)
+def process_sheet(sheet_df):
+    # Identify the rows where sections start
+    section_starts = sheet_df[0].isin(['q02', 'q03'])
 
-# Display the styled DataFrame
-styled_df.to_excel('output_highlighted.xlsx', engine='openpyxl', index=False)
+    # Create DataFrames for each section
+    sections = []
+    start_idx = 0
+    for end_idx in section_starts[section_starts].index:
+        section_df = sheet_df.iloc[start_idx:end_idx, :]
+        sections.append(section_df)
+        start_idx = end_idx + 1
+
+    # Compare sections and identify unique cells in the second section
+    unique_cells = sections[1][~sections[1].isin(sections[0])].dropna()
+
+    # Apply styling to the DataFrame
+    styled_df = pd.concat([sections[0], sections[1]]).style.applymap(highlight_unique_cells, subset=unique_cells.columns)
+    
+    return styled_df
+
+# Read Excel file and process each sheet
+file_path = 'path_to_your_excel_file.xlsx'
+excel_file = pd.ExcelFile(file_path)
+
+with pd.ExcelWriter('output_highlighted.xlsx', engine='openpyxl') as writer:
+    for sheet_name in excel_file.sheet_names:
+        sheet_df = pd.read_excel(file_path, sheet_name, header=None)
+        styled_df = process_sheet(sheet_df)
+        styled_df.to_excel(writer, sheet_name=sheet_name, index=False)
