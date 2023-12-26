@@ -1,34 +1,29 @@
 import pandas as pd
 
-def highlight_unique_cells(val):
-    return 'background-color: yellow'
-
-def process_sheet(sheet_name, sheet_df):
-    # Identify the rows where sections start
-    section_starts = sheet_df[0].isin(['q02', 'q03'])
-
-    # Create DataFrames for each section
-    sections = []
-    start_idx = 0
-    for end_idx in section_starts[section_starts].index:
-        section_df = sheet_df.iloc[start_idx:end_idx, :]
-        sections.append(section_df)
-        start_idx = end_idx + 1
-
-    # Compare sections and identify unique cells in the second section
-    unique_cells = sections[1][~sections[1].isin(sections[0])].dropna()
-
-    # Apply styling to the DataFrame
-    styled_df = pd.concat([sections[0], sections[1]]).style.applymap(highlight_unique_cells, subset=unique_cells.columns)
-    
-    return styled_df
-
-# Read Excel file and process each sheet
+# Read Excel file into two DataFrames, one for each section
 file_path = 'path_to_your_excel_file.xlsx'
-excel_file = pd.ExcelFile(file_path)
+df_q02 = pd.read_excel(file_path, sheet_name='q02', header=None)
+df_q03 = pd.read_excel(file_path, sheet_name='q03', header=None)
 
-with pd.ExcelWriter('output_highlighted.xlsx', engine='openpyxl') as writer:
-    for sheet_name in excel_file.sheet_names:
-        sheet_df = pd.read_excel(file_path, sheet_name, header=None)
-        styled_df = process_sheet(sheet_name, sheet_df)
-        styled_df.to_excel(writer, sheet_name=sheet_name, index=False)
+# Set the first row as the header for each DataFrame
+df_q02.columns = df_q02.iloc[0]
+df_q03.columns = df_q03.iloc[0]
+
+# Drop the duplicate header row
+df_q02 = df_q02.iloc[1:]
+df_q03 = df_q03.iloc[1:]
+
+# Specify the columns for the join
+join_columns = ['id', 'city', 'country']
+
+# Merge or join DataFrames on the specified columns
+merged_df = pd.merge(df_q02, df_q03, how='outer', on=join_columns, indicator=True).query('_merge == "right_only"').drop('_merge', axis=1)
+
+# Apply styling to the DataFrame
+def highlight_unique_cells(val):
+    return 'background-color: yellow' if val in df_q03.values and val not in df_q02.values else ''
+
+styled_df = pd.concat([df_q02, df_q03]).style.applymap(highlight_unique_cells, subset=merged_df.columns)
+
+# Save the styled DataFrame to a new Excel file
+styled_df.to_excel('output_highlighted.xlsx', engine='openpyxl', index=False)
