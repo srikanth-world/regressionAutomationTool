@@ -1,32 +1,28 @@
-import openpyxl
 import pandas as pd
 
-def identify_distinct_cells_columnwise(file_path):
-    # Load the Excel file into a pandas DataFrame
-    df = pd.read_excel(file_path, header=1, index_col=0)
+# Step 1: Read Excel file into DataFrame
+file_path = 'path_to_your_excel_file.xlsx'
+df = pd.read_excel(file_path, header=None)
 
-    # Create a new workbook for formatting
-    wb = openpyxl.Workbook()
-    ws = wb.active
+# Step 2: Identify the rows where sections start
+section_starts = df[0].isin(['q02', 'q03'])
 
-    # Iterate through each column in the DataFrame
-    for col_idx, col in enumerate(df.columns, start=1):
-        column_values = df[col]
+# Step 3: Create DataFrames for each section
+sections = []
+start_idx = 0
+for end_idx in section_starts[section_starts].index:
+    section_df = df.iloc[start_idx:end_idx, :]
+    sections.append(section_df)
+    start_idx = end_idx + 1
 
-        # Use pandas to identify distinct values (unique values)
-        unique_values = column_values[column_values.duplicated(keep=False)]
+# Step 4: Compare sections and identify unique cells
+unique_cells = pd.concat([sections[0], sections[1]]).drop_duplicates(keep=False)
 
-        # Apply conditional formatting to each cell with a unique value
-        for row_idx, value in unique_values.items():
-            cell = ws.cell(row=row_idx + 1, column=col_idx)  # Adjust to 1-based index
-            cell.value = value
-            cell.fill = openpyxl.styles.PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+# Step 5: Use a styling function to update the background color of unique cells
+def highlight_unique_cells(val):
+    return 'background-color: yellow' if val in unique_cells.values else ''
 
-    # Save the formatted workbook
-    output_path = file_path.replace('.xlsx', '_formatted.xlsx')
-    wb.save(output_path)
-    print(f"Formatted file saved to: {output_path}")
+styled_df = pd.concat([sections[0], sections[1]]).style.applymap(highlight_unique_cells)
 
-# Example usage:
-file_path = 'path/to/your/excel_file.xlsx'
-identify_distinct_cells_columnwise(file_path)
+# Display the styled DataFrame
+styled_df.to_excel('output_highlighted.xlsx', engine='openpyxl', index=False)
