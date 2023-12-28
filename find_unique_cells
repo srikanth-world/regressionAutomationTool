@@ -1,0 +1,84 @@
+import pandas as pd
+from openpyxl import load_workbook
+from openpyxl.styles import NamedStyle, PatternFill
+from openpyxl.utils.dataframe import dataframe_to_rows
+
+# Specify the path to your Excel file
+excel_file_path = 'C:\\Users\\Srikanth\\Desktop\\test\\new\\Book1.xlsx'
+
+# Read the Excel file into a DataFrame
+df = pd.read_excel(excel_file_path, header=1)
+
+# # Display the DataFrame
+print('\nOriginal Dataframe:')
+print(df)
+
+# # Identify rows containing specific keywords in any column
+# keywords_to_remove = ['q03', 'id']
+# rows_to_remove = df[df.apply(lambda row: any(keyword in str(cell) for keyword in keywords_to_remove for cell in row), axis=1)].index
+
+# # Remove identified rows
+# df_filtered = df.drop(rows_to_remove)
+# print('\n Filtered rows:')
+# print(df_filtered)
+
+keyword = 'q03'
+# Identify the index of the row containing the keyword
+separator_index = df[df.apply(lambda row: any(keyword in str(cell) for cell in row), axis=1)].index[0]
+
+# Separate the dataframe based on the separator_index
+df1 = df.iloc[:separator_index, :]
+df2 = df.iloc[separator_index + 2:, :]
+
+
+# Reset the index of each DataFrame
+df1 = df1.reset_index(drop=True)
+df2 = df2.reset_index(drop=True)
+
+print("\nDataFrame 1:")
+print(df1)
+print("\nDataFrame 2:")
+print(df2)
+
+# Identify rows unique to each DataFrame
+unique_rows_df1 = df1[~df1.set_index(['city', 'country']).index.isin(df2.set_index(['city', 'country']).index)]
+unique_rows_df2 = df2[~df2.set_index(['city', 'country']).index.isin(df1.set_index(['city', 'country']).index)]
+
+print("\nChanged Rows in DataFrame 1:")
+print(unique_rows_df1)
+
+print("\nChanged Rows in DataFrame 2:")
+print(unique_rows_df2)
+
+
+common_values = pd.concat([unique_rows_df1, unique_rows_df2])
+print('\ncommon values:')
+print(common_values)
+
+# Specify the path to the Excel file
+excel_file_path1 = 'C:\\Users\\Srikanth\\Desktop\\test\\new\\Book1_formatted.xlsx'
+
+# Write the original DataFrame to Excel
+df.to_excel(excel_file_path1, index=False, header=True)
+
+# Load the workbook using openpyxl
+workbook = load_workbook(excel_file_path1)
+
+# Get the active sheet
+sheet = workbook.active
+
+# Define a named style with the desired background color
+highlight_style = NamedStyle(name='highlight_style', fill=PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid"))
+
+for row_idx, (index, row_values) in enumerate(df.iterrows(), start=2):
+    # Check if any row in common_values has matching values in the specified columns
+    if any(common_values[['city', 'country']].eq(row_values[['city', 'country']]).all(axis=1)):
+        for col_idx, value in enumerate(row_values, start=1):
+            print(f"Applying formatting to cell {sheet.cell(row=row_idx, column=col_idx).coordinate}, value: {value}")
+            sheet.cell(row=row_idx, column=col_idx).style = highlight_style
+
+                                
+# Save the updated Excel file
+workbook.save(excel_file_path1)
+
+print(f'\n Updated DataFrame with highlighted common rows saved to {excel_file_path1}')
