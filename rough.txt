@@ -1,8 +1,11 @@
-# Identify rows unique to df1
-unique_rows_df1 = df1[~df1[['city', 'country']].isin(df2[['city', 'country']]).all(axis=1)]
+# Merge DataFrames and identify unique rows
+merged = pd.merge(df1, df2, on=['city', 'country'], how='outer', indicator=True)
 
-# Identify rows unique to df2
-unique_rows_df2 = df2[~df2[['city', 'country']].isin(df1[['city', 'country']]).all(axis=1)]
+# Rows unique to df1
+unique_rows_df1 = merged[merged['_merge'] == 'left_only'].drop('_merge', axis=1)
+
+# Rows unique to df2
+unique_rows_df2 = merged[merged['_merge'] == 'right_only'].drop('_merge', axis=1)
 
 print("Unique Rows in DataFrame 1:")
 print(unique_rows_df1)
