@@ -1,5 +1,5 @@
-# Iterate through sheets with the same name
-    for sheet_name in set(df1_dict.keys()).intersection(df2_dict.keys()):
-        # Extract DataFrames for the current sheet
-        df1 = df1_dict[sheet_name]
-        df2 = df2_dict[sheet_name]
+# Determine common columns dynamically
+        common_columns = list(set(df1.columns) & set(df2.columns))
+
+        # Use common columns for merging
+        merged = pd.merge(df1, df2, on=common_columns, how='outer', indicator=True)
