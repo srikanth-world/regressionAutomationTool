@@ -1,15 +1,11 @@
-# Apply styling to highlight differences
-for row_idx, row in enumerate(merged_sheet.iter_rows(min_row=3, max_row=min(merged_sheet.max_row, diff_cells.shape[0] + 2), min_col=1, max_col=merged_sheet.max_column), start=3):
-    for col_idx, cell in enumerate(row, start=1):
-        if diff_cells[row_idx - 3, col_idx - 1]:  # Adjust indices for 0-based indexing
-            cell.fill = openpyxl.styles.PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+# Identify rows unique to df1
+unique_rows_df1 = df1[~df1[['city', 'country']].isin(df2[['city', 'country']]).all(axis=1)]
 
+# Identify rows unique to df2
+unique_rows_df2 = df2[~df2[['city', 'country']].isin(df1[['city', 'country']]).all(axis=1)]
 
+print("Unique Rows in DataFrame 1:")
+print(unique_rows_df1)
 
-===========
-# Apply conditional formatting to each column
-    for col_idx, col in enumerate(df.columns, start=1):
-        unique_values = df[col].unique()
-        for row_idx, cell in enumerate(ws[col], start=2):
-            if cell.value in unique_values and list(ws[col]).count(cell.value) == 1:
-                cell.fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+print("\nUnique Rows in DataFrame 2:")
+print(unique_rows_df2)
