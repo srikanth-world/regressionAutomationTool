@@ -1,14 +1,5 @@
-# Merge DataFrames and identify unique rows
-merged = pd.merge(df1, df2, on=['city', 'country'], how='outer', indicator=True)
-
-# Rows unique to df1
-unique_rows_df1 = merged[merged['_merge'] == 'left_only'].drop('_merge', axis=1)
-
-# Rows unique to df2
-unique_rows_df2 = merged[merged['_merge'] == 'right_only'].drop('_merge', axis=1)
-
-print("Unique Rows in DataFrame 1:")
-print(unique_rows_df1)
-
-print("\nUnique Rows in DataFrame 2:")
-print(unique_rows_df2)
+# Iterate through sheets with the same name
+    for sheet_name in set(df1_dict.keys()).intersection(df2_dict.keys()):
+        # Extract DataFrames for the current sheet
+        df1 = df1_dict[sheet_name]
+        df2 = df2_dict[sheet_name]
