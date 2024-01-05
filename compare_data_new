@@ -1,0 +1,62 @@
+import pandas as pd
+from openpyxl import load_workbook
+from openpyxl.styles import PatternFill
+
+# Sample DataFrames
+data1 = {'id': [500, 501, 502, 503],
+         'city': ['Hyderabad', 'New Jersy', 'Krakow', 'Sydney'],
+         'country': ['India', 'USA', 'Poland', 'Australia']}
+df1 = pd.DataFrame(data1)
+
+data2 = {'id': [500, 501, 502, 503, 504, 505],
+         'city': ['Hyderabad1', 'Charlotte', 'London', 'Sydney', 'Dubai', 'Amsterdam'],
+         'country': ['India', 'USA', 'UK', 'Australia', 'UAE', 'Neatherands']}
+df2 = pd.DataFrame(data2)
+
+print("\n DataFrame1")
+print(df1)
+print("\n DataFrame2")
+print(df2)
+
+# # Reindex df2 based on df1's index and columns
+# df2 = df2.reindex(index=df1.index, columns=df1.columns)
+
+# # Update values in df2 with values from df1 where they differ
+# for col in df1.columns:
+#     mask = df2[col] != df1[col]
+#     df2.loc[mask, col] = df1.loc[mask, col]
+
+# print(df2)
+
+
+# Find differences between df1 and df2
+differences = df1.ne(df2)
+
+# print(differences.shape[0])
+
+# new_rows_in_df2 = ~df2['id'].isin(df1['id'])
+# print("\n new rows in df2")
+# print(new_rows_in_df2)
+
+# Create an Excel writer
+with pd.ExcelWriter('differences.xlsx', engine='openpyxl') as writer:
+    # Write DataFrames to the same sheet in Excel
+    df1.to_excel(writer, sheet_name='Sheet1', index=False, startrow=0, header=True)
+    df2.to_excel(writer, sheet_name='Sheet1', index=False, startrow=df1.shape[0] + 2, header=True)
+
+    # Load the workbook
+    workbook = writer.book
+    sheet = workbook['Sheet1']
+
+    # Create a PatternFill with yellow background color
+    fill = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
+
+    # Iterate through cells where differences occur and apply the yellow background color
+    for row_index in range(1, differences.shape[0] + 1):
+        for col_index in range(1, differences.shape[1] + 1):
+            if differences.iat[row_index - 1, col_index - 1]:
+                sheet.cell(row=row_index + 1, column=col_index).fill = fill
+                sheet.cell(row=row_index + 1 + df1.shape[0] + 2, column=col_index).fill = fill
+
+# Save the Excel file
+print("Differences highlighted and saved to 'differences.xlsx'.")
