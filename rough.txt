@@ -1,5 +1,3 @@
-# Determine common columns dynamically
-        common_columns = list(set(df1.columns) & set(df2.columns))
-
-        # Use common columns for merging
-        merged = pd.merge(df1, df2, on=common_columns, how='outer', indicator=True)
+# Ensure that all DataFrames have the same columns
+    dfs1 = {sheet_name: df.reindex(columns=dfs2[sheet_name].columns, fill_value='NA') for sheet_name, df in dfs1.items()}
+    dfs2 = {sheet_name: df.reindex(columns=dfs1[sheet_name].columns, fill_value='NA') for sheet_name, df in dfs2.items()}
