@@ -1,62 +1,75 @@
+import os
 import pandas as pd
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
 
-# Sample DataFrames
-data1 = {'id': [500, 501, 502, 503],
-         'city': ['Hyderabad', 'New Jersy', 'Krakow', 'Sydney'],
-         'country': ['India', 'USA', 'Poland', 'Australia']}
-df1 = pd.DataFrame(data1)
+def highlight_differences(file_path1, file_path2, output_path='differences.xlsx'):
+    # Read all sheets from the two Excel files into DataFrames
+    dfs1 = pd.read_excel(file_path1, sheet_name=None)
+    dfs2 = pd.read_excel(file_path2, sheet_name=None)
 
-data2 = {'id': [500, 501, 502, 503, 504, 505],
-         'city': ['Hyderabad1', 'Charlotte', 'London', 'Sydney', 'Dubai', 'Amsterdam'],
-         'country': ['India', 'USA', 'UK', 'Australia', 'UAE', 'Neatherands']}
-df2 = pd.DataFrame(data2)
+    # Create an Excel writer
+    with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
+        summary_data = []  # List to store summary data for each sheet
 
-print("\n DataFrame1")
-print(df1)
-print("\n DataFrame2")
-print(df2)
+        for sheet_name in set(dfs1.keys()) | set(dfs2.keys()):
+            df1 = dfs1.get(sheet_name, pd.DataFrame())
+            df2 = dfs2.get(sheet_name, pd.DataFrame())
 
-# # Reindex df2 based on df1's index and columns
-# df2 = df2.reindex(index=df1.index, columns=df1.columns)
+            # Find differences between DataFrames
+            differences = df1.ne(df2)
 
-# # Update values in df2 with values from df1 where they differ
-# for col in df1.columns:
-#     mask = df2[col] != df1[col]
-#     df2.loc[mask, col] = df1.loc[mask, col]
+            # Replace NaN values with a specific value in DataFrames
+            df1 = df1.fillna('NA')
+            df2 = df2.fillna('NA')
 
-# print(df2)
+            # Write DataFrames to the sheet in Excel
+            df1.to_excel(writer, sheet_name=sheet_name, index=False, startrow=0, header=True)
+            df2.to_excel(writer, sheet_name=sheet_name, index=False, startrow=df1.shape[0] + 2, header=True)
 
+            # Load the workbook
+            workbook = writer.book
+            sheet = workbook[sheet_name]
 
-# Find differences between df1 and df2
-differences = df1.ne(df2)
+            # Create a PatternFill with yellow background color
+            fill_yellow = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
 
-# print(differences.shape[0])
+            # Create a PatternFill with blue background color
+            fill_blue = PatternFill(start_color='0000FF', end_color='0000FF', fill_type='solid')
 
-# new_rows_in_df2 = ~df2['id'].isin(df1['id'])
-# print("\n new rows in df2")
-# print(new_rows_in_df2)
+            # Iterate through cells where differences occur and apply the yellow background color
+            for row_index in range(1, differences.shape[0] + 1):
+                for col_index in range(1, differences.shape[1] + 1):
+                    if differences.iat[row_index - 1, col_index - 1]:
+                        sheet.cell(row=row_index + 1, column=col_index).fill = fill_yellow
+                        sheet.cell(row=row_index + 1 + df1.shape[0] + 2, column=col_index).fill = fill_yellow
 
-# Create an Excel writer
-with pd.ExcelWriter('differences.xlsx', engine='openpyxl') as writer:
-    # Write DataFrames to the same sheet in Excel
-    df1.to_excel(writer, sheet_name='Sheet1', index=False, startrow=0, header=True)
-    df2.to_excel(writer, sheet_name='Sheet1', index=False, startrow=df1.shape[0] + 2, header=True)
+            # Highlight entire rows in blue for additional rows in either df1 or df2
+            for row_index in range(df1.shape[0] + 1, df2.shape[0] + 1):
+                sheet.cell(row=row_index + 1 + df1.shape[0] + 2, column=1).fill = fill_blue
+                for col_index in range(2, df2.shape[1] + 1):
+                    sheet.cell(row=row_index + 1 + df1.shape[0] + 2, column=col_index).fill = fill_blue
 
-    # Load the workbook
-    workbook = writer.book
-    sheet = workbook['Sheet1']
+            # Create summary data for the sheet
+            row_count_df1 = len(df1)
+            row_count_df2 = len(df2)
+            row_count_match = (df1 == df2).all(axis=None)
+            newly_added_row_count = (df2.shape[0] - df1.shape[0]) if df2.shape[0] > df1.shape[0] else 0
 
-    # Create a PatternFill with yellow background color
-    fill = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
+            # Append summary data to the list
+            summary_data.append([row_count_df1, row_count_df2, row_count_match, newly_added_row_count, sheet_name])
 
-    # Iterate through cells where differences occur and apply the yellow background color
-    for row_index in range(1, differences.shape[0] + 1):
-        for col_index in range(1, differences.shape[1] + 1):
-            if differences.iat[row_index - 1, col_index - 1]:
-                sheet.cell(row=row_index + 1, column=col_index).fill = fill
-                sheet.cell(row=row_index + 1 + df1.shape[0] + 2, column=col_index).fill = fill
+        # Create a summary DataFrame
+        summary_df = pd.DataFrame(summary_data, columns=['Row Count DF1', 'Row Count DF2', 'Row Count Match', 'Newly Added Row Count', 'Sheet Name'])
 
-# Save the Excel file
-print("Differences highlighted and saved to 'differences.xlsx'.")
+        # Write summary DataFrame to the summary sheet in Excel
+        summary_df.to_excel(writer, sheet_name='Summary', index=False)
+
+        # Save the Excel file
+        print(f"Differences highlighted and saved to '{output_path}'.")
+
+# Example usage
+path1 = 'path/to/excel1.xlsx'
+path2 = 'path/to/excel2.xlsx'
+
+highlight_differences(path1, path2)
