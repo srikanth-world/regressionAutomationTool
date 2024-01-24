@@ -19,10 +19,6 @@ def highlight_differences(file_path1, file_path2, output_path='differences.xlsx'
             # Find differences between DataFrames
             differences = df1.ne(df2)
 
-            # Replace NaN values with a specific value in DataFrames
-            df1 = df1.fillna('NA')
-            df2 = df2.fillna('NA')
-
             # Write DataFrames to the sheet in Excel
             df1.to_excel(writer, sheet_name=sheet_name, index=False, startrow=0, header=True)
             df2.to_excel(writer, sheet_name=sheet_name, index=False, startrow=df1.shape[0] + 2, header=True)
@@ -31,24 +27,33 @@ def highlight_differences(file_path1, file_path2, output_path='differences.xlsx'
             workbook = writer.book
             sheet = workbook[sheet_name]
 
-            # Create a PatternFill with yellow background color
+            # Create a PatternFill with yellow and blue background colors
             fill_yellow = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
-
-            # Create a PatternFill with blue background color
             fill_blue = PatternFill(start_color='0000FF', end_color='0000FF', fill_type='solid')
 
-            # Iterate through cells where differences occur and apply the yellow background color
-            for row_index in range(1, differences.shape[0] + 1):
-                for col_index in range(1, differences.shape[1] + 1):
-                    if differences.iat[row_index - 1, col_index - 1]:
-                        sheet.cell(row=row_index + 1, column=col_index).fill = fill_yellow
-                        sheet.cell(row=row_index + 1 + df1.shape[0] + 2, column=col_index).fill = fill_yellow
+            # Check if the row counts are different between df1 and df2
+            if len(df1) != len(df2):
+                # Identify differences in overlapping rows and highlight them with YELLOW
+                overlapping_rows = set(df1.index) & set(df2.index)
+                for row_index in overlapping_rows:
+                    for col_index in range(1, differences.shape[1] + 1):
+                        if differences.iat[row_index, col_index - 1]:
+                            # Apply yellow background color to the corresponding cells in the overlapping sections
+                            sheet.cell(row=row_index + 1, column=col_index).fill = fill_yellow
+                            sheet.cell(row=row_index + 1 + df1.shape[0] + 2, column=col_index).fill = fill_yellow
 
-            # Highlight entire rows in blue for additional rows in either df1 or df2
-            for row_index in range(df1.shape[0] + 1, df2.shape[0] + 1):
-                sheet.cell(row=row_index + 1 + df1.shape[0] + 2, column=1).fill = fill_blue
-                for col_index in range(2, df2.shape[1] + 1):
-                    sheet.cell(row=row_index + 1 + df1.shape[0] + 2, column=col_index).fill = fill_blue
+                # Find newly added rows and highlight them with BLUE
+                added_rows = set(df2.index) - set(df1.index)
+                for row_index in added_rows:
+                    for col_index in range(1, df2.shape[1] + 1):
+                        sheet.cell(row=row_index + 1 + df1.shape[0] + 2, column=col_index).fill = fill_blue
+            else:
+                # Iterate through cells where differences occur and apply the yellow background color
+                for row_index in range(1, differences.shape[0] + 1):
+                    for col_index in range(1, differences.shape[1] + 1):
+                        if differences.iat[row_index - 1, col_index - 1]:
+                            sheet.cell(row=row_index + 1, column=col_index).fill = fill_yellow
+                            sheet.cell(row=row_index + 1 + df1.shape[0] + 2, column=col_index).fill = fill_yellow
 
             # Create summary data for the sheet
             row_count_df1 = len(df1)
