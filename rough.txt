@@ -1,12 +1,6 @@
-# Identify newly added rows in either Excel1 or Excel2
-            newly_added_rows = pd.concat([df1, df2]).drop_duplicates(keep=False)
-
-            # Create a PatternFill with blue background color
-            fill_blue = PatternFill(start_color='0000FF', end_color='0000FF', fill_type='solid')
-
-            # Highlight entire rows with BLUE color for newly added rows
-            for index, row in newly_added_rows.iterrows():
-                for col_index in range(1, len(row) + 1):
-                    sheet.cell(row=row_index + df1.shape[0] + 2, column=col_index).fill = fill_blue
-
-            # Create summary data for the sheet
+# Iterate through cells where differences occur
+for row_index in range(1, min(df1.shape[0], df2.shape[0]) + 1):
+    for col_index in range(1, differences.shape[1] + 1):
+        if differences.iat[row_index - 1, col_index - 1]:
+            # Apply yellow background color to the corresponding cells in the overlapping sections
+            sheet.cell(row=row_index + 1, column=col_index).fill = fill_yellow
