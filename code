@@ -1,0 +1,111 @@
+Here's the code for the ASP.NET Core 8 Web API project, adhering to the suggested structure, to fetch data from the Person and Book APIs on gnikdroy.pythonanywhere.com:
+Models/ExternalApiResponse.cs:
+public class ExternalApiResponse
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    // Add other properties as needed for Person and Book data
+}
+
+Models/Person.cs (Optional):
+public class Person : ExternalApiResponse
+{
+    public string Email { get; set; }
+    public string Phone { get; set; }
+}
+
+Models/Book.cs (Optional):
+public class Book : ExternalApiResponse
+{
+    public string Author { get; set; }
+    public string Genre { get; set; }
+}
+
+Services/IExternalApiService.cs:
+public interface IExternalApiService
+{
+    Task<T> GetExternalData<T>(string url);
+}
+
+Services/ExternalApiService.cs:
+public class ExternalApiService : IExternalApiService
+{
+    private readonly HttpClient _httpClient;
+
+    public ExternalApiService(HttpClient httpClient)
+    {
+        _httpClient = httpClient;
+    }
+
+    public async Task<T> GetExternalData<T>(string url)
+    {
+        var response = await _httpClient.GetAsync(url);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<T>();
+    }
+}
+
+Controllers/ExternalApiController.cs:
+public class ExternalApiController : ControllerBase
+{
+    private readonly IExternalApiService _externalApiService;
+    private readonly IConfiguration _configuration;
+
+    public ExternalApiController(IExternalApiService externalApiService, IConfiguration configuration)
+    {
+        _externalApiService = externalApiService;
+        _configuration = configuration;
+    }
+
+    [HttpGet]
+    [Route("person/{id}")]
+    public async Task<IActionResult> GetPerson(int id)
+    {
+        var baseUrl = _configuration["ExternalApiBaseUrl"];
+        var url = $"{baseUrl}/person/{id}";
+        var person = await _externalApiService.GetExternalData<Person>(url);
+        return Ok(person);
+    }
+
+    [HttpGet]
+    [Route("book/{id}")]
+    public async Task<IActionResult> GetBook(int id)
+    {
+        var baseUrl = _configuration["ExternalApiBaseUrl"];
+        var url = $"{baseUrl}/book/{id}";
+        var book = await _externalApiService.GetExternalData<Book>(url);
+        return Ok(book);
+    }
+}
+
+appsettings.json:
+{
+  "ExternalApiBaseUrl": "https://gnikdroy.pythonanywhere.com/api"
+}
+
+Program.cs:
+public class Program
+{
+    public static async Task Main(string[] args)
+    {
+        var builder = WebApplication.CreateBuilder(args);
+
+        // Add services to the container.
+        builder.Services.AddHttpClient();
+        builder.Services.AddScoped<IExternalApiService, ExternalApiService>();
+        builder.Services.AddControllers();
+
+        // Configure the HTTP request pipeline.
+        var app = builder.Build();
+
+        app.MapControllers();
+
+        app.Run();
+    }
+}
+
+Remember to replace https://gnikdroy.pythonanywhere.com/api in appsettings.json with the actual base URL of the gnikdroy.pythonanywhere.com APIs if it's different. This code demonstrates fetching data by ID for Person and Book APIs. You can adapt it to fetch data using different API endpoints based on your requirements.
+ * https://github.com/fabriciogd/desafio-softplan
+ * https://github.com/Elpulgo/battleships
+ * https://github.com/AhmedZAE/TeamExperimentalProject
+ * https://stackoverflow.com/questions/71845469/call-external-api-between-c-sharp-and-reactjs-status-200-vm1001-uncaught-in-p
