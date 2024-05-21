@@ -1,0 +1,76 @@
+Here's how to modify the controller (ExternalApiController.cs) to inject the mock data services (people and books) for testing purposes:
+1. ExternalApiController.cs:
+public class ExternalApiController : ControllerBase
+{
+    private readonly List<Person> _people;
+    private readonly List<Book> _books;
+
+    public ExternalApiController(List<Person> people, List<Book> books)
+    {
+        _people = people;
+        _books = books;
+    }
+
+    [HttpGet]
+    [Route("person/{id}")]
+    public IActionResult GetPerson(int id)
+    {
+        var person = _people.FirstOrDefault(p => p.Id == id);
+        if (person == null)
+        {
+            return NotFound();
+        }
+        return Ok(person);
+    }
+
+    [HttpGet]
+    [Route("book/{id}")]
+    public IActionResult GetBook(int id)
+    {
+        var book = _books.FirstOrDefault(b => b.Id == id);
+        if (book == null)
+        {
+            return NotFound();
+        }
+        return Ok(book);
+    }
+}
+
+2. Program.cs:
+ * Inject the mock data services (people and books) into the controller constructor during application startup in the Program.cs file.
+public class Program
+{
+    public static async Task Main(string[] args)
+    {
+        var builder = WebApplication.CreateBuilder(args);
+
+        // Create mock data for testing
+        var people = new List<Person>()
+        {
+            // ...
+        };
+        var books = new List<Book>()
+        {
+            // ...
+        };
+
+        // Add services to the container
+        builder.Services.AddSingleton(people);
+        builder.Services.AddSingleton(books);
+        builder.Services.AddControllers(options =>
+        {
+            options.Controllers.Add(typeof(ExternalApiController)); // Manually add controller
+        });
+
+        var app = builder.Build();
+
+        // ... rest of the app configuration code
+
+        app.Run();
+    }
+}
+
+Explanation:
+ * The controller constructor is now injected with List<Person> and List<Book> instead of relying on the IExternalApiService.
+ * The Program.cs file registers the mock data (people and books) as singletons and configures the controllers to include ExternalApiController manually.
+ * This way, the controller uses the mock data for testing without making external API calls.

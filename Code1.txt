@@ -1,0 +1,75 @@
+Here's how you can modify the code to create mock Person and Book classes with sample data for testing purposes without calling external APIs:
+1. Models Folder:
+ * Create separate files for Person.cs and Book.cs instead of a generic ExternalApiResponse.cs class.
+2. Person.cs:
+public class Person
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string Email { get; set; }
+    public string Phone { get; set; }
+
+    public Person(int id, string name, string email, string phone)
+    {
+        Id = id;
+        Name = name;
+        Email = email;
+        Phone = phone;
+    }
+}
+
+3. Book.cs:
+public class Book
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string Author { get; set; }
+    public string Genre { get; set; }
+
+    public Book(int id, string name, string author, string genre)
+    {
+        Id = id;
+        Name = name;
+        Author = author;
+        Genre = genre;
+    }
+}
+
+4. Program.cs:
+ * Modify the Main method in Program.cs to create mock data and inject it into a dependency injection container before starting the application.
+public class Program
+{
+    public static async Task Main(string[] args)
+    {
+        var builder = WebApplication.CreateBuilder(args);
+
+        // Create mock data for testing
+        var people = new List<Person>()
+        {
+            new Person(1, "John Doe", "johndoe@example.com", "123-456-7890"),
+            // Add more person objects as needed
+        };
+        var books = new List<Book>()
+        {
+            new Book(1, "The Lord of the Rings", "J.R.R. Tolkien", "Fantasy"),
+            // Add more book objects as needed
+        };
+
+        // Add services to the container
+        builder.Services.AddSingleton(people); // Register people list as a singleton service
+        builder.Services.AddSingleton(books);   // Register books list as a singleton service
+        // ... rest of the service registration code
+
+        var app = builder.Build();
+
+        // ... rest of the app configuration code
+
+        app.Run();
+    }
+}
+
+5. Controllers (Optional):
+ * If you're using controllers for testing purposes, modify them to inject the mock data services (people and books) instead of using the ExternalApiService.
+By following these steps, you'll create mock Person and Book classes with sample data for testing your ASP.NET Core Web API in isolation. Remember to remove or comment out the parts related to the external API calls (like ExternalApiService) when using this approach for testing.
+ * https://github.com/AhmedAtallah1988/Appiatech-Task
+ * https://github.com/Dalladory/BooksShopExam
