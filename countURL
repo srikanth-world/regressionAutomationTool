@@ -1,39 +1,40 @@
-using System;
-using System.IO;
 using HtmlAgilityPack;
 
-namespace URLCounter
+namespace URLExtractor
 {
     class Program
     {
         static void Main(string[] args)
         {
-            // Replace "saved_html.html" with your actual file name
-            string fileName = "saved_html.html";
+            // Replace "your_html.html" with the actual file path
+            string htmlFilePath = "your_html.html";
 
-            // Read the HTML content from the file
-            string html = File.ReadAllText(fileName);
-
-            // Parse the HTML using HtmlAgilityPack
+            // Load the HTML document
             HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(html);
+            doc.Load(htmlFilePath);
 
-            // Find all anchor tags (links)
-            HtmlNodeCollection links = doc.DocumentNode.SelectNodes("//a");
+            // Find the top-level navigation element (e.g., <nav>)
+            HtmlNode navElement = doc.DocumentNode.SelectSingleNode("//nav");
 
-            // Create a new file to store the URLs
-            string outputFileName = "urls.txt";
-            using (StreamWriter writer = new StreamWriter(outputFileName))
+            // Extract and print URLs recursively
+            ExtractURLs(navElement, 0);
+        }
+
+        static void ExtractURLs(HtmlNode node, int level)
+        {
+            foreach (HtmlNode child in node.ChildNodes)
             {
-                // Write each URL to the file
-                foreach (HtmlNode link in links)
+                if (child.Name == "a")
                 {
-                    string href = link.Attributes["href"].Value;
-                    writer.WriteLine(href);
+                    string href = child.Attributes["href"].Value;
+                    string text = child.InnerText;
+                    Console.WriteLine(new string(' ', level * 2) + text + " (" + href + ")");
+                }
+                else if (child.Name == "ul")
+                {
+                    ExtractURLs(child, level + 1);
                 }
             }
-
-            Console.WriteLine($"URLs listed to {outputFileName}");
         }
     }
 }
