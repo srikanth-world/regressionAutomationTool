@@ -1,38 +1,28 @@
 using System;
-using System.Net.Http;
+using System.IO;
 using HtmlAgilityPack;
 
 namespace URLCounter
 {
     class Program
     {
-        static async Task Main(string[] args)
+        static void Main(string[] args)
         {
-            string url = "https://www.example.com"; // Replace with your target URL
+            // Replace "saved_html.html" with your actual file name
+            string fileName = "saved_html.html";
 
-            using (HttpClient client = new HttpClient())
-            {
-                try
-                {
-                    HttpResponseMessage response = await client.GetAsync(url);
-                    response.EnsureSuccessStatusCode();
+            // Read the HTML content from the file
+            string html = File.ReadAllText(fileName);
 
-                    string html = await response.Content.ReadAsStringAsync();
+            // Parse the HTML using HtmlAgilityPack
+            HtmlDocument doc = new HtmlDocument();
+            doc.LoadHtml(html);
 
-                    HtmlDocument doc = new HtmlDocument();
-                    doc.LoadHtml(html);
+            // Find all anchor tags (links)
+            HtmlNodeCollection links = doc.DocumentNode.SelectNodes("//a");
 
-                    // Find all anchor tags (links)
-                    HtmlNodeCollection links = doc.DocumentNode.SelectNodes("//a");
-
-                    int urlCount = links.Count;
-                    Console.WriteLine($"Number of URLs found: {urlCount}");
-                }
-                catch (HttpRequestException ex)
-                {
-                    Console.WriteLine($"Error fetching URL: {ex.Message}");
-                }
-            }
+            int urlCount = links.Count;
+            Console.WriteLine($"Number of URLs found: {urlCount}");
         }
     }
 }
