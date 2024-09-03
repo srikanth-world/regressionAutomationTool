@@ -21,8 +21,19 @@ namespace URLCounter
             // Find all anchor tags (links)
             HtmlNodeCollection links = doc.DocumentNode.SelectNodes("//a");
 
-            int urlCount = links.Count;
-            Console.WriteLine($"Number of URLs found: {urlCount}");
+            // Create a new file to store the URLs
+            string outputFileName = "urls.txt";
+            using (StreamWriter writer = new StreamWriter(outputFileName))
+            {
+                // Write each URL to the file
+                foreach (HtmlNode link in links)
+                {
+                    string href = link.Attributes["href"].Value;
+                    writer.WriteLine(href);
+                }
+            }
+
+            Console.WriteLine($"URLs listed to {outputFileName}");
         }
     }
 }
